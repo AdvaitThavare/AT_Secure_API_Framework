@@ -1,4 +1,4 @@
-import type { IncomingMessage } from 'node:http';
+import type { RequestContext } from '../context/requestContext';
 import type { AppError } from '../errors/errorHandler';
 
 const allowedMethods = [
@@ -10,9 +10,9 @@ const allowedMethods = [
 ];
 
 export function methodRouter(
-  req: IncomingMessage
+  context: RequestContext
 ): AppError | null {
-  const method = req.method;
+  const method = context.req.method;
 
   if (method && allowedMethods.includes(method)) {
     return null;

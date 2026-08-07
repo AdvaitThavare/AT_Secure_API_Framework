@@ -3,9 +3,14 @@ import fs from 'node:fs';
 import { serverConfig } from './config/serverConfig';
 import { sendError } from './errors/errorHandler';
 import { responseConfig, sendResponse } from './successResponse/successHandler';
-import { validateGenericRequest } from './genericRequestValidation/genericRequestValidator';
+import { requestValidator } from './payloadFormatValidation/requestValidator';
 import { methodRouter } from './requestRouting/methodRouter';
 import { endpointRouter } from './requestRouting/endpointRouter';
+import type { RequestContext } from './context/requestContext';
+import { serviceDispatcher } from './serviceManagement/serviceDispatcher';
+import { payloadTypeIdentifier } from './requestRouting/payloadTypeIdentifier';
+import { encWrapperValidator } from './payloadFormatValidation/encWrapperValidator';
+import { decryptPayload,encryptPayload } from './cryptography/cryptographyLayer';
 
 const server = https.createServer(
   {
@@ -22,55 +27,69 @@ const server = https.createServer(
       chunks.push(chunk);
     });
 
-    req.on('end', () => {
+    req.on('end', async () => {
       const rawBody = Buffer.concat(chunks).toString();
-      const methodError = methodRouter(req);
+      const context: RequestContext = {
+        req,
+        res,
+        rawBody,
+        contentType: req.headers['content-type'] ?? '',
+      };
+      const methodError = methodRouter(context);
       if (methodError) {
         sendError(res, methodError);
         return;
       }
-      const route = endpointRouter(req);
+      const route = endpointRouter(context);
       if ('statusCode' in route) {
         sendError(res, route);
         return;
       }
-      const validationError = validateGenericRequest(req, rawBody);
+
+      const payloadTypeError = payloadTypeIdentifier(context);
+      if (payloadTypeError) {
+        sendError(res, payloadTypeError);
+        return;
+      }
+
+      if (context.payloadType === 'ENCRYPTED') {
+
+        const wrapperError = encWrapperValidator(context);
+        if (wrapperError) {
+          sendError(res, wrapperError);
+          return;
+        }
+
+        const decryptError = await decryptPayload(context);
+        if (decryptError) {
+          sendError(res, decryptError);
+          return;
+        }
+      }
+
+      const validationError = requestValidator(context);
       if (validationError) {
         sendError(res, validationError);
         return;
       }
-      const contentType = req.headers['content-type'] ?? '';
+      const contentType = context.contentType ?? '';
 
-      if (contentType.includes('application/json')) {
-        try {
-          const body = JSON.parse(rawBody);
-          sendResponse(
-            res,
-            responseConfig.JSON,
-            JSON.stringify(body)
-          );
-        } catch {
-          sendError(res, {
-            category: 'SERVER',
-            statusCode: 400,
-            errorCode: 'INVALID_JSON',
-            message: 'Invalid JSON payload',
-          });
+      context.serviceResponse = serviceDispatcher(route, context.payload);
+
+      if (context.payloadType === 'ENCRYPTED') {
+        const encryptError = await encryptPayload(context);
+        if (encryptError) {
+          sendError(res, encryptError);
+          return;
         }
-      } else if (contentType.includes('text/plain')) {
-        sendResponse(
-          res,
-          responseConfig.TEXT,
-          rawBody
-        );
-      } else {
-        sendError(res, {
-          category: 'SERVER',
-          statusCode: 415,
-          errorCode: 'UNSUPPORTED_CONTENT_TYPE',
-          message: 'Unsupported Content-Type',
-        });
       }
+      sendResponse(
+        res,
+        contentType.includes('application/json')
+          ? responseConfig.JSON
+          : responseConfig.TEXT,
+        JSON.stringify(context.serviceResponse)
+      );
     });
   }
 );

@@ -1,15 +1,18 @@
-import type { IncomingMessage } from 'node:http';
+import type { RequestContext } from '../context/requestContext';
 import type { AppError } from '../errors/errorHandler';
 
-export function validateGenericRequest(
-  req: IncomingMessage,
-  rawBody: string
+export function requestValidator(
+  context: RequestContext
 ): AppError | null {
-  const contentType = req.headers['content-type'] ?? '';
+
+  if (context.payloadType === 'ENCRYPTED') {
+    return null;
+  }
+  const contentType = context.contentType ?? '';
 
   if (contentType.includes('application/json')) {
     try {
-      JSON.parse(rawBody);
+      context.payload = JSON.parse(context.rawBody);
     } catch {
       return {
         category: 'SERVER',
@@ -23,6 +26,7 @@ export function validateGenericRequest(
   }
 
   if (contentType.includes('text/plain')) {
+    context.payload = context.rawBody;
     return null;
   }
 

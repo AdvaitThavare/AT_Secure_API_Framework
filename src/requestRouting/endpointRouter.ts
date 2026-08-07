@@ -1,4 +1,4 @@
-import type { IncomingMessage } from 'node:http';
+import type { RequestContext } from '../context/requestContext';
 import type { AppError } from '../errors/errorHandler';
 
 export type Route = {
@@ -10,9 +10,9 @@ const routes = new Map<string, Route>([
 ]);
 
 export function endpointRouter(
-  req: IncomingMessage
-): Route | AppError {
-  const url = req.url ?? '/';
+  context: RequestContext
+): AppError | Route {
+  const url = context.req.url ?? '/';
 
   const route = routes.get(url);
 

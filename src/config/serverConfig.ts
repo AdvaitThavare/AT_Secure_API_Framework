@@ -6,5 +6,6 @@ export const serverConfig = {
     key: 'certs/server/server.key',
     cert: 'certs/server/server.crt',
     ca: 'certs/ca/ca.crt',
+    clientCert: 'certs/client/client.crt',
   },
 };
