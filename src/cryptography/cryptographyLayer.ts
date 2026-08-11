@@ -2,6 +2,10 @@ import type { RequestContext } from '../context/requestContext';
 import type { AppError } from '../errors/errorHandler';
 import { decryptJWE } from './encryptionMethods/JWE/decryptJWE';
 import { encryptJWE } from './encryptionMethods/JWE/encryptJWE';
+import { decryptAES_RSA } from './encryptionMethods/AES_RSA/decryptAES_RSA';
+import { encryptAES_RSA } from './encryptionMethods/AES_RSA/encryptAES_RSA';
+import { decryptJWS_AES_RSA } from './encryptionMethods/JWS_AES_RSA/decryptJWS_AES_RSA';
+import { encryptJWS_AES_RSA } from './encryptionMethods/JWS_AES_RSA/encryptJWS_AES_RSA';
 
 type CryptoHandler = (
   context: RequestContext
@@ -17,7 +21,6 @@ type CryptoStrategy = {
 export async function decryptPayload(
   context: RequestContext
 ): Promise<AppError | null> {
-
   const handler = cryptoHandlers.get(
     context.encryptionType ?? ''
   );
@@ -37,7 +40,6 @@ export async function decryptPayload(
 export async function encryptPayload(
   context: RequestContext
 ): Promise<AppError | null> {
-
   const handler = cryptoHandlers.get(
     context.encryptionType ?? ''
   );
@@ -54,37 +56,6 @@ export async function encryptPayload(
   return await handler.encrypt(context);
 }
 
-
-// ===== Temporary Placeholders =====
-
-async function decryptHigh(
-  context: RequestContext
-): Promise<AppError | null> {
-
-  return null;
-}
-
-async function encryptHigh(
-  context: RequestContext
-): Promise<AppError | null> {
-
-  return null;
-}
-
-async function decryptMedium(
-  context: RequestContext
-): Promise<AppError | null> {
-
-  return null;
-}
-
-async function encryptMedium(
-  context: RequestContext
-): Promise<AppError | null> {
-
-  return null;
-}
-
 // ===== Cryptographic Strategies =====
 
 const cryptoHandlers: Map<string, CryptoStrategy> = new Map([
@@ -97,18 +68,17 @@ const cryptoHandlers: Map<string, CryptoStrategy> = new Map([
   ],
 
   [
-    'HIGH',
+    'AES_RSA',
     {
-      decrypt: decryptHigh,
-      encrypt: encryptHigh,
+      decrypt: decryptAES_RSA,
+      encrypt: encryptAES_RSA,
     },
   ],
-
   [
-    'MEDIUM',
+    'JWS_AES_RSA',
     {
-      decrypt: decryptMedium,
-      encrypt: encryptMedium,
+      decrypt: decryptJWS_AES_RSA,
+      encrypt: encryptJWS_AES_RSA,
     },
   ],
 ]);

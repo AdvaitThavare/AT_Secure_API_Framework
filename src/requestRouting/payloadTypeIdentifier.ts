@@ -11,10 +11,10 @@ const VALID_COMBINATIONS: Map<
   Set<DataEncryption>
 > = new Map([
   ['PLAIN', new Set<DataEncryption>(['NA'])],
-  ['ENCRYPTED', new Set<DataEncryption>([
+  ['ENCRYPTED', new Set([
     'JWE',
-    'HIGH',
-    'MEDIUM',
+    'JWS_AES_RSA',
+    'AES_RSA',
   ])],
 ]);
 

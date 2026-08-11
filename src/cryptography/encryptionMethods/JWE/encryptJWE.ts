@@ -18,7 +18,7 @@ const publicKey = fs.readFileSync(
 );
 
 export type JWEResponse = {
-  encPayload: string;
+  encResPayload: string;
 };
 
 export async function encryptJWE(
@@ -140,7 +140,7 @@ export async function encryptJWE(
   // ===== Final Output =====
 
   context.serviceResponse = {
-    encPayload: compactJWE,
+    encResPayload: compactJWE,
   } satisfies JWEResponse;
 
   return null;

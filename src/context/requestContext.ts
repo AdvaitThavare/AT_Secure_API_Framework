@@ -1,6 +1,11 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { PayloadState, DataEncryption } from '../constants/cryptographyConstants';
 
+export type EncryptedWrapper = {
+  payload: string;
+  key?: string;
+};
+
 export interface RequestContext {
   req: IncomingMessage;
   res: ServerResponse;
@@ -10,4 +15,5 @@ export interface RequestContext {
   contentType: string;
   payloadType?: PayloadState;
   encryptionType?: DataEncryption;
+  encryptedWrapper?: EncryptedWrapper;
 }

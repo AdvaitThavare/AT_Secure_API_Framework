@@ -6,8 +6,8 @@ export const PAYLOAD_STATES = [
 export const DATA_ENCRYPTIONS = [
   'NA',
   'JWE',
-  'HIGH',
-  'MEDIUM',
+  'JWS_AES_RSA',
+  'AES_RSA',
 ] as const;
 
 export type PayloadState =

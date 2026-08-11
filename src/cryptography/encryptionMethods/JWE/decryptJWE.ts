@@ -17,18 +17,14 @@ const privateKey = fs.readFileSync(
   'utf8'
 );
 
-type JWERequest = {
-  encPayload: string;
-};
-
 export async function decryptJWE(
   context: RequestContext
 ): Promise<AppError | null> {
-  const wrapper = context.payload as JWERequest;
+  const wrapper = context.encryptedWrapper;
 
   // ===== Split JWE =====
 
-  const parts = wrapper.encPayload.split('.');
+  const parts = wrapper!.payload.split('.');
 
   if (parts.length !== 5) {
     return {
