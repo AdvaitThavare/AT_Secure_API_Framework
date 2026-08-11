@@ -1,43 +1,45 @@
-# AT_Secure_API_Framework --- Architecture
+# AT_Secure_API_Framework — Architecture
 
 ## 1. Purpose
 
-`AT_Secure_API_Framework` is a TypeScript-based Playwright/API security
-testing framework with a local HTTPS echo server supporting mutual TLS
-(mTLS) and JOSE/JWE encrypted request-response flows.
+`AT_Secure_API_Framework` is a TypeScript-based API security testing framework built around:
 
-Current implementation is focused on **JSON and plaintext payloads**,
-with JWE using:
+* HTTPS with mutual TLS (mTLS)
+* Secure request processing
+* Payload/encryption routing
+* JOSE/JWE
+* AES_RSA
+* JWS_AES_RSA
+* Reusable service and cryptography layers
 
--   **JOSE / JWE**
--   **Content encryption:** AES-256-GCM
--   **Key encryption:** RSA-OAEP-256
--   **Signature:** None
+The current implementation uses a local HTTPS echo server for development and interoperability testing.
 
-------------------------------------------------------------------------
+---
 
 ## 2. Current Architecture
 
-``` text
+```text
 Client / Postman
        |
        | HTTPS + mTLS
        v
-Local Echo Server
+Local HTTPS Server
        |
-       +--> Method / Endpoint Routing
+       +--> Method Routing
        |
-       +--> Payload Type Identification
+       +--> Endpoint Routing
+       |
+       +--> Payload / Encryption Identification
        |
        +--> ENCRYPTED
        |      |
-       |      +--> JWE Wrapper Validation
-       |      +--> JWE Decryption
-       |      +--> Request Validation
+       |      +--> Encrypted Wrapper Validation
+       |      +--> Request Normalization
+       |      +--> Cryptography Decryption
        |
        +--> PLAIN
-              |
-              +--> Request Validation
+       |
+       +--> Common Request Validation
        |
        v
 Service Dispatcher
@@ -45,146 +47,138 @@ Service Dispatcher
        v
 Service
        |
-       +--> PLAIN request
-       |      |
-       |      +--> Plain response
+       v
+Service Response
        |
-       +--> ENCRYPTED request
-              |
-              +--> JWE Response Encryption
-              +--> Encrypted response
+       +--> ENCRYPTED
+       |      |
+       |      +--> Cryptography Encryption
+       |
+       v
+HTTP Response
 ```
 
-------------------------------------------------------------------------
+The server currently uses a `RequestContext` object to carry request, payload, service-response, routing, and cryptography state through the pipeline.
 
-## 3. Transport and mTLS
+---
 
-The local server runs over HTTPS on:
+## 3. Request Context
 
-``` text
-https://localhost:8443
+`RequestContext` currently contains:
+
+```text
+RequestContext
+├── req
+├── res
+├── rawBody
+├── payload
+├── serviceResponse
+├── contentType
+├── payloadType
+├── encryptionType
+└── encryptedWrapper
 ```
 
-The server:
+`encryptedWrapper` is the normalized internal representation of an encrypted request:
 
--   uses a server private key and certificate;
--   trusts the local CA;
--   requires a client certificate;
--   rejects clients whose certificate is not trusted.
-
-The project maintains separate certificate areas for:
-
-``` text
-certs/
-├── ca/
-├── client/
-└── server/
+```text
+{
+    payload: string,
+    key?: string
+}
 ```
 
-The Playwright API client uses a reusable mTLS request context for local
-API testing.
+The external request wrapper can therefore change without requiring individual cryptography strategies to understand the external field names.
 
-------------------------------------------------------------------------
+---
 
-## 4. Request Pipeline
+## 4. Request Processing Pipeline
 
-The server receives the raw request body and builds a `RequestContext`.
+The current request flow is:
 
-The current request processing sequence is:
-
-1.  Method routing
-2.  Endpoint routing
-3.  Payload type identification
-4.  Encrypted wrapper validation, when applicable
-5.  Payload decryption, when applicable
-6.  Common request validation
-7.  Service dispatch
-8.  Response encryption, when applicable
-9.  Response sending
-
-`RequestContext` carries request/response state through the pipeline,
-including the raw body, content type, payload, payload type, encryption
-type, and service response.
-
-------------------------------------------------------------------------
-
-## 5. Payload Handling
-
-### PLAIN
-
-Plain requests currently support:
-
--   `application/json`
--   `text/plain`
-
-`requestValidator.ts` performs transport/payload-format validation.
-
-For JSON, it parses the raw body.
-
-For plaintext, it stores the raw body as the payload.
-
-Unsupported content types return `415 UNSUPPORTED_CONTENT_TYPE`.
-
-### ENCRYPTED
-
-The current encrypted flow supports JWE JSON payloads.
-
-The HTTP headers currently used are:
-
-``` text
-x-payload-type
-x-encryption-type
+```text
+1. Receive HTTP request
+2. Build RequestContext
+3. Validate HTTP method
+4. Resolve endpoint
+5. Identify payload state and encryption type
+6. Validate encrypted wrapper when applicable
+7. Normalize encrypted wrapper
+8. Decrypt encrypted payload when applicable
+9. Perform common request validation
+10. Dispatch to service
+11. Encrypt service response when applicable
+12. Send HTTP response
 ```
 
-The encrypted request body contains the JWE wrapper.
+Service-specific business and schema validation remains the responsibility of the individual service rather than the common request-validation layer.
 
-For encrypted requests:
+---
 
-1.  The outer encrypted request is identified and validated.
-2.  JWE is decrypted.
-3.  The decrypted payload is validated as JSON inside `decryptJWE`.
-4.  `requestValidator` remains part of the common pipeline but does not
-    re-parse the decrypted payload from the original HTTP body.
-5.  The resulting payload reaches the service layer.
+## 5. Payload and Encryption Types
 
-Service-specific schema, field, and business validations are
-intentionally handled at the individual service level rather than in
-`requestValidator.ts`.
+Supported payload states:
 
-------------------------------------------------------------------------
+```text
+PLAIN
+ENCRYPTED
+```
 
-## 6. JWE Cryptography
+Supported data encryption types:
 
-The current JWE implementation uses:
-
-``` text
+```text
+NA
 JWE
-├── RSA-OAEP-256
-│   └── Encrypt/decrypt CEK
-│
-└── AES-256-GCM
-    ├── Encrypt/decrypt payload
-    ├── 12-byte IV for server response encryption
-    ├── 128-bit authentication tag
-    └── Protected header as AAD
+AES_RSA
+JWS_AES_RSA
 ```
 
-The decrypted request payload is placed into `context.payload`.
+Current valid combinations:
 
-For an encrypted request, the service response is encrypted before
-`sendResponse()`.
+```text
+PLAIN     → NA
 
-The client has been verified to successfully decrypt the
-server-generated JWE response.
+ENCRYPTED → JWE
+ENCRYPTED → AES_RSA
+ENCRYPTED → JWS_AES_RSA
+```
 
-------------------------------------------------------------------------
+The payload/encryption identifier validates these combinations before the cryptography layer is reached.
+
+---
+
+## 6. Encrypted Request Normalization
+
+Encrypted requests currently use an external wrapper such as:
+
+```json
+{
+  "encReqPayload": "...",
+  "encReqKey": "..."
+}
+```
+
+`JWE` does not require `encReqKey`.
+
+`AES_RSA` and `JWS_AES_RSA` require `encReqKey`.
+
+The encrypted wrapper validator:
+
+1. Parses the outer JSON wrapper.
+2. Validates required fields.
+3. Applies encryption-specific wrapper rules.
+4. Converts the external representation into the internal `EncryptedWrapper`.
+5. Passes the normalized representation to the cryptography strategy.
+
+This keeps external wrapper naming separate from cryptography implementation details.
+
+---
 
 ## 7. Cryptography Layer
 
-The cryptography layer uses a single strategy map for each encryption
-type:
+Cryptography uses a strategy map:
 
-``` text
+```text
 encryptionType
       |
       v
@@ -195,107 +189,304 @@ cryptoHandlers
       +--> encrypt(context)
 ```
 
-Current registered strategies:
+Current strategies:
 
-``` text
+```text
 JWE
-HIGH
-MEDIUM
+AES_RSA
+JWS_AES_RSA
 ```
 
-JWE has the implemented `decrypt` and `encrypt` handlers.
+Each strategy implements the same application-level contract:
 
-HIGH and MEDIUM are currently placeholders.
+```text
+decrypt(context)
+encrypt(context)
+```
 
-This allows the request's selected encryption type to determine both the
-request decryption strategy and response encryption strategy.
+The strategy owns its protocol-specific behavior and response representation.
 
-------------------------------------------------------------------------
+---
 
-## 8. Service Layer
+## 8. JWE
 
-The current service dispatcher maps a route's service name to a service
-handler.
+Current JWE configuration:
 
-The implemented service is:
+```text
+JWE
+├── Key encryption : RSA-OAEP-256
+├── Content encryption : AES-256-GCM
+├── Authentication tag : 128-bit
+└── Protected header : AAD
+```
 
-``` text
+JWE provides both confidentiality and authenticated encryption through AES-GCM.
+
+---
+
+## 9. AES_RSA
+
+Current AES_RSA flow:
+
+```text
+Plaintext
+    |
+    v
+AES-256-CBC
+    |
+    v
+Encrypted payload
+
+AES key
+    |
+    v
+RSA/PKCS#1 v1.5
+    |
+    v
+Encrypted AES key
+```
+
+Current characteristics:
+
+```text
+AES       : AES-256-CBC
+Padding   : PKCS#7
+IV        : 16 bytes
+RSA       : RSA/ECB/PKCS1Padding
+Signature : None
+```
+
+The absence of a signature is intentional.
+
+AES_RSA is designed as the confidentiality-oriented flow.
+
+---
+
+## 10. JWS_AES_RSA
+
+Current JWS_AES_RSA flow:
+
+```text
+Plaintext
+    |
+    v
+JWS / RS256
+    |
+    v
+Signed plaintext
+    |
+    v
+AES-256-CBC
+    |
+    v
+Encrypted payload
+
+AES key
+    |
+    v
+RSA/PKCS#1 v1.5
+    |
+    v
+Encrypted AES key
+```
+
+Current characteristics:
+
+```text
+JWS       : RS256
+AES       : AES-256-CBC
+Padding   : PKCS#7
+IV        : 16 bytes
+RSA       : RSA/ECB/PKCS1Padding
+```
+
+During decryption:
+
+```text
+RSA decrypt AES key
+       ↓
+AES decrypt payload
+       ↓
+Verify JWS signature
+       ↓
+Extract JSON payload
+```
+
+The additional JWS layer provides integrity/authenticity for the plaintext before AES encryption.
+
+---
+
+## 11. Response Handling
+
+Response encryption remains the responsibility of the selected cryptography strategy.
+
+The strategies produce their protocol-specific response structures.
+
+For encrypted responses, the external representation is:
+
+```json
+{
+  "encResPayload": "...",
+  "encResKey": "..."
+}
+```
+
+JWE does not require an encrypted AES key in the same manner as AES_RSA/JWS_AES_RSA.
+
+The common HTTP response handler is responsible for sending the resulting response, but does not implement cryptographic response construction.
+
+---
+
+## 12. Service Layer
+
+The service dispatcher maps a resolved route to a service handler.
+
+Current service:
+
+```text
 echoService
 ```
 
-The echo service currently returns the received payload unchanged.
+The service receives the processed payload and produces the service response.
 
-Service-level validations are intended to remain within individual
-services rather than becoming part of the common request validator.
+Cryptographic processing remains outside the service layer.
 
-------------------------------------------------------------------------
+---
 
-## 9. Error Handling
+## 13. Error Handling
 
-The framework uses a common `AppError` structure containing:
+The framework uses a common `AppError` structure:
 
-``` text
+```text
 category
 statusCode
 errorCode
 message
 ```
 
-JWE currently has explicit error handling for:
+Errors are returned from the responsible layer and handled by the common error-response mechanism.
 
--   invalid JWE format;
--   invalid encrypted CEK;
--   invalid decrypted JSON;
--   AES-GCM/JWE payload decryption failure;
--   response JSON serialization failure;
--   AES-GCM response encryption failure;
--   RSA-OAEP response CEK encryption failure.
+The design intentionally separates:
 
-Cryptographic authentication failures are intentionally exposed through
-a general JWE payload error rather than revealing the specific
-cryptographic component that failed.
+```text
+Common pipeline errors
+        +
+Cryptography-specific errors
+        +
+Service-specific errors
+```
 
-------------------------------------------------------------------------
+---
 
-## 10. Current Verification State
+## 14. TLS and Cryptographic Keys
 
-The following JWE and regression scenarios have been tested
-successfully:
+The local server uses mTLS with:
 
--   valid encrypted JSON request → encrypted JSON response;
--   client-side decryption of encrypted response;
--   invalid decrypted JSON;
--   invalid JWE structure;
--   invalid encrypted CEK;
--   tampered JWE payload/authentication failure;
--   invalid response serialization;
--   AES response-encryption failure;
--   RSA response CEK-encryption failure;
--   plain `text/plain`;
--   plain `application/json`;
--   unsupported `application/xml`.
+```text
+Local CA
+Server certificate
+Server private key
+Client certificate
+```
 
-The current JWE request → service → encrypted response flow is therefore
-end-to-end functional.
+The same certificate/key material may also be used for application-level cryptographic operations where required by the protocol or partner specification.
 
-------------------------------------------------------------------------
+This is intentional and does not require separate physical keys.
 
-## 11. Planned Actions
+Future configuration cleanup may separate the **TLS configuration naming** from the **application cryptography configuration naming** without requiring different certificates or keys.
 
-1.  Implement HIGH encryption/decryption.
-2.  Implement MEDIUM encryption/decryption.
-3.  Complete cryptographic regression testing for HIGH and MEDIUM.
-4.  Define internal diagnostics for encrypted-response failures without
-    exposing unnecessary cryptographic details to API consumers.
-5.  Rename encryption headers:
-    -   `x-payload-type` → `X-Payload-State`
-    -   `x-encryption-type` → `X-Data-Encryption`
-6.  Rename certificate configuration properties:
-    -   `cert` → `serverCert`
-    -   `key` → `serverKey`
-7.  Update header handling --- replace the current individually managed
-    header properties with a more consistent header representation.
-8.  Merge `endpointRouter` and `methodRouter` --- details to be
-    finalized.
-9.  Finalize the service invocation/registration approach --- details to
-    be finalized.
+---
+
+## 15. Current Verification
+
+The three encrypted flows have been verified through Postman:
+
+```text
+JWE
+AES_RSA
+JWS_AES_RSA
+```
+
+The encrypted request → decryption → service → encryption → response flow is functioning.
+
+Postman is currently used for manual/interoperability verification.
+
+A separate automated regression test layer is planned for protecting the TypeScript architecture during future refactoring.
+
+---
+
+# 16. Planned Architecture Tasks
+
+The following tasks are planned and are not necessarily implemented yet.
+
+### Phase 1 — Request and code structure
+
+1. Redesign `RequestContext` header handling around a centralized `headers` representation.
+2. Keep interpreted values such as `payloadType` and `encryptionType` separate from raw headers.
+3. Update `payloadTypeIdentifier` to use the new header representation.
+4. Clean redundant/unused code in request identification.
+5. Review and maintain encrypted-wrapper normalization as the single external-to-internal boundary.
+6. Extract reusable low-level cryptographic utilities for shared AES/RSA operations.
+7. Add automated regression tests for the current pipeline and cryptography strategies.
+
+### Phase 2 — Pipeline and routing
+
+8. Extract the main request-processing pipeline from `server.ts`.
+9. Harden service registration and dispatch.
+10. Normalize endpoint matching using URL pathname.
+11. Review the relationship between method, endpoint, and service routing.
+
+### Phase 3 — Design discussions
+
+12. Decide whether routing should remain code-defined or eventually use an external/database-backed configuration.
+13. Review the final HTTP header naming convention.
+14. Review request/response content-type handling as part of the header redesign.
+
+### Phase 4 — Cryptography
+
+15. Design dynamic IV handling for AES-CBC.
+16. Define how the IV is transported in the encrypted wrapper/protocol before implementation.
+17. Harden JWS protected-header validation.
+18. Review AES_RSA and JWS_AES_RSA protocol contracts without changing their intended cryptographic behavior.
+19. Review TLS/application cryptography configuration naming.
+
+### Phase 5 — Documentation
+
+20. Update this `ARCHITECTURE.md` whenever the architecture changes.
+21. Prepare a concise `README.md` covering setup, architecture, supported encryption flows, testing, usage, and security considerations.
+
+---
+
+## 17. Architectural Principles
+
+The project follows these principles:
+
+```text
+Transport
+    ↓
+Routing
+    ↓
+Identification
+    ↓
+Validation / Normalization
+    ↓
+Cryptography
+    ↓
+Service
+    ↓
+Cryptography
+    ↓
+Response
+```
+
+Key principles:
+
+* External request formats are normalized before reaching cryptography strategies.
+* Cryptography strategies remain protocol-specific.
+* Shared low-level cryptographic operations may be extracted into reusable utilities.
+* Services should not contain cryptographic responsibilities.
+* Common validation should not contain service-specific business validation.
+* Response cryptographic structures remain owned by their respective strategies.
+* Raw HTTP headers and interpreted application state should remain conceptually separate.
+* Protocol-specific behavior should not be generalized merely to reduce code duplication.
+* Future refactoring should preserve the current working request/response flows.
