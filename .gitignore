@@ -18,7 +18,10 @@ Thumbs.db
 # IDE files
 .vscode/
 
-# Certificates - keep public certs, ignore private material
+# Certificates - local development material
 certs/**/*.key
 certs/**/*.csr
 certs/**/*.srl
+certs/**/*.pem
+certs/**/*.p12
+certs/**/*.pfx
