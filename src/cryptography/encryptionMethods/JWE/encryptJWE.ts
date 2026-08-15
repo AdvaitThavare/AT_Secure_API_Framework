@@ -8,10 +8,10 @@
 
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
-import { constants, publicEncrypt, randomBytes, webcrypto } from 'node:crypto';
-import fs from 'node:fs';
-import { serverConfig } from '../../../serverManagement/serverConfig';
+import { constants, publicEncrypt, webcrypto } from 'node:crypto';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
+import { encodeBase64Url, generateRandomBytes, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
+
 
 const { clientPublicKey } = getCryptoFunctionKeys();
 
@@ -25,21 +25,23 @@ export async function encryptJWE(
 
   // ===== Protected Header =====
 
-  const protectedHeader = Buffer.from(
-    JSON.stringify({
-      alg: 'RSA-OAEP-256',
-      enc: 'A256GCM',
-      typ: 'JWE',
-    })
-  ).toString('base64url');
+  const protectedHeader = encodeBase64Url(
+    stringToBytes(
+      JSON.stringify({
+        alg: 'RSA-OAEP-256',
+        enc: 'A256GCM',
+        typ: 'JWE',
+      })
+    )
+  );
 
   // ===== Generate CEK =====
 
-  const cek = randomBytes(32);
+  const cek = generateRandomBytes(32);
 
   // ===== Generate IV =====
 
-  const iv = randomBytes(12);
+  const iv = generateRandomBytes(12);
 
   // ===== Convert Payload to JSON =====
 
@@ -75,11 +77,11 @@ export async function encryptJWE(
       {
         name: 'AES-GCM',
         iv,
-        additionalData: new TextEncoder().encode(protectedHeader),
+        additionalData: stringToBytes(protectedHeader),
         tagLength: 128,
       },
       aesKey,
-      new TextEncoder().encode(plaintext)
+      stringToBytes(plaintext)
     );
   } catch {
     return {
@@ -129,10 +131,10 @@ export async function encryptJWE(
 
   const compactJWE = [
     protectedHeader,
-    encryptedKey.toString('base64url'),
-    iv.toString('base64url'),
-    Buffer.from(cipherText).toString('base64url'),
-    Buffer.from(authenticationTag).toString('base64url'),
+    encodeBase64Url(encryptedKey),
+    encodeBase64Url(iv),
+    encodeBase64Url(cipherText),
+    encodeBase64Url(authenticationTag),
   ].join('.');
 
   // ===== Final Output =====

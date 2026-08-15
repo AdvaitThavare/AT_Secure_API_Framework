@@ -11,8 +11,8 @@ import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
 import { constants, createPublicKey, privateDecrypt, verify, webcrypto } from 'node:crypto';
-import fs from 'node:fs';
-import { serverConfig } from '../../../serverManagement/serverConfig';
+import { bytesToString, decodeBase64, decodeBase64Url, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
+
 
 const { serverPrivateKey, clientPublicKey } = getCryptoFunctionKeys();
 
@@ -34,10 +34,7 @@ export async function decryptJWS_AES_RSA(
                 key: serverPrivateKey,
                 padding: constants.RSA_PKCS1_PADDING,
             },
-            Buffer.from(
-                wrapper!.key!,
-                'base64'
-            )
+            decodeBase64(wrapper!.key!)
         );
 
     } catch {
@@ -69,13 +66,10 @@ export async function decryptJWS_AES_RSA(
             await webcrypto.subtle.decrypt(
                 {
                     name: 'AES-CBC',
-                    iv: new TextEncoder().encode(IV),
+                    iv: stringToBytes(IV),
                 },
                 aesKey,
-                Buffer.from(
-                    wrapper!.payload,
-                    'base64'
-                )
+                decodeBase64(wrapper!.payload)
             );
 
     } catch {
@@ -93,7 +87,7 @@ export async function decryptJWS_AES_RSA(
 
     try {
         signedToken =
-            new TextDecoder().decode(
+            bytesToString(
                 decryptedBuffer
             );
 
@@ -136,10 +130,7 @@ export async function decryptJWS_AES_RSA(
             'RSA-SHA256',
             Buffer.from(signingInput),
             createPublicKey(clientPublicKey),
-            Buffer.from(
-                encodedSignature,
-                'base64url'
-            )
+            decodeBase64Url(encodedSignature)
         );
 
     } catch {
@@ -167,10 +158,9 @@ export async function decryptJWS_AES_RSA(
             signedToken.split('.')[1];
 
         const decryptedString =
-            Buffer.from(
-                encodedPayload,
-                'base64url'
-            ).toString('utf8');
+            bytesToString(
+                decodeBase64Url(encodedPayload)
+            );
 
         context.payload =
             JSON.parse(decryptedString);

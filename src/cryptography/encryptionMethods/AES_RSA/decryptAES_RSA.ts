@@ -10,9 +10,8 @@
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
 import { constants, privateDecrypt, webcrypto, } from 'node:crypto';
-import fs from 'node:fs';
-import { serverConfig } from '../../../serverManagement/serverConfig';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
+import { bytesToString, decodeBase64, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
 
 
 const { serverPrivateKey } = getCryptoFunctionKeys();
@@ -34,7 +33,7 @@ export async function decryptAES_RSA(
                 key: serverPrivateKey,
                 padding: constants.RSA_PKCS1_PADDING,
             },
-            Buffer.from(wrapper!.key!, 'base64')
+            decodeBase64(wrapper!.key!)
         );
     } catch {
         return {
@@ -47,11 +46,10 @@ export async function decryptAES_RSA(
 
     // ===== Convert AES Parameters =====
 
-    const iv = new TextEncoder().encode(IV);
+    const iv = stringToBytes(IV);
 
-    const encryptedPayload = Buffer.from(
-        wrapper!.payload,
-        'base64'
+    const encryptedPayload = decodeBase64(
+        wrapper!.payload
     );
 
     // ===== AES-CBC Decryption =====
@@ -89,7 +87,7 @@ export async function decryptAES_RSA(
     // ===== Convert Decrypted Payload to JSON =====
 
     try {
-        const decryptedString = new TextDecoder().decode(
+        const decryptedString = bytesToString(
             decryptedBuffer
         );
 

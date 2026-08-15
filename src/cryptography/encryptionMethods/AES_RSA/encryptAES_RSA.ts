@@ -10,9 +10,9 @@
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
-import {constants, publicEncrypt, randomBytes, webcrypto, } from 'node:crypto';
-import fs from 'node:fs';
-import { serverConfig } from '../../../serverManagement/serverConfig';
+import {constants, publicEncrypt, webcrypto, } from 'node:crypto';
+import { encodeBase64, generateRandomBytes, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
+
 
 const { clientPublicKey } = getCryptoFunctionKeys();
 
@@ -28,7 +28,7 @@ export async function encryptAES_RSA(
 ): Promise<AppError | null> {
     // ===== Generate AES Key =====
 
-    const aesKeyBytes = randomBytes(32);
+    const aesKeyBytes = generateRandomBytes(32);
     // ===== Convert Payload to JSON =====
 
     let plaintext: string;
@@ -62,10 +62,10 @@ export async function encryptAES_RSA(
         encryptedBuffer = await webcrypto.subtle.encrypt(
             {
                 name: 'AES-CBC',
-                iv: new TextEncoder().encode(IV),
+                iv: stringToBytes(IV),
             },
             aesKey,
-            new TextEncoder().encode(plaintext)
+            stringToBytes(plaintext)
         );
     } catch {
         return {
@@ -100,8 +100,8 @@ export async function encryptAES_RSA(
     // ===== Final Output =====
 
     context.serviceResponse = {
-        encResPayload: Buffer.from(encryptedBuffer).toString('base64'),
-        encResKey: encryptedKey.toString('base64'),
+        encResPayload: encodeBase64(new Uint8Array(encryptedBuffer)),
+        encResKey: encodeBase64(encryptedKey),
     } satisfies AESRSAResponse;
 
     return null;

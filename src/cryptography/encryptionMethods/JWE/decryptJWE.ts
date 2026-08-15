@@ -9,9 +9,8 @@
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
 import { privateDecrypt, constants, webcrypto, } from 'node:crypto';
-import fs from 'node:fs';
-import { serverConfig } from '../../../serverManagement/serverConfig';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
+import { bytesToString, decodeBase64Url, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
 
 const { serverPrivateKey } = getCryptoFunctionKeys();
 
@@ -52,7 +51,7 @@ export async function decryptJWE(
         padding: constants.RSA_PKCS1_OAEP_PADDING,
         oaepHash: 'sha256',
       },
-      Buffer.from(encryptedKey, 'base64url')
+      decodeBase64Url(encryptedKey)
     );
   } catch {
     return {
@@ -65,26 +64,18 @@ export async function decryptJWE(
 
   // ===== Convert to Buffers =====
 
-  const ivBuffer = Buffer.from(iv, 'base64url');
+  const ivBytes = decodeBase64Url(iv);
 
-  const cipherBuffer = Buffer.from(
-    cipherText,
-    'base64url'
-  );
+  const cipherBytes = decodeBase64Url(cipherText);
 
-  const tagBuffer = Buffer.from(
-    authenticationTag,
-    'base64url'
-  );
+  const tagBytes = decodeBase64Url(authenticationTag);
 
   const encryptedPayload = Buffer.concat([
-    cipherBuffer,
-    tagBuffer,
+    cipherBytes,
+    tagBytes,
   ]);
 
-  const aad = new TextEncoder().encode(
-    protectedHeader
-  );
+  const aad = stringToBytes(protectedHeader);
 
   // ===== AES-GCM Decryption =====
 
@@ -107,7 +98,7 @@ export async function decryptJWE(
       await webcrypto.subtle.decrypt(
         {
           name: 'AES-GCM',
-          iv: ivBuffer,
+          iv: ivBytes,
           additionalData: aad,
           tagLength: 128,
         },
@@ -130,7 +121,7 @@ export async function decryptJWE(
 
   try {
     const decryptedString =
-      new TextDecoder().decode(
+      bytesToString(
         decryptedBuffer
       );
 

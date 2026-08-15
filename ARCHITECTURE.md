@@ -490,3 +490,120 @@ Key principles:
 * Raw HTTP headers and interpreted application state should remain conceptually separate.
 * Protocol-specific behavior should not be generalized merely to reduce code duplication.
 * Future refactoring should preserve the current working request/response flows.
+
+## 18. Architectural Decisions (to be incorporated properly in the architecture.md file later)
+
+a. Dynamic IV — AES_RSA and JWS_AES_RSA
+AES_RSA and JWS_AES_RSA will use a fresh 16-byte cryptographically random IV for every AES-CBC encryption operation. The IV will be transported as a standard Base64-encoded value in the existing JSON encrypted-payload wrapper. Since 16 bytes always produce exactly 24 characters in standard Base64, the wrapper validator will first perform a lightweight 24-character length check, followed by Base64 validation and decoded-length verification to ensure the resulting IV is exactly 16 bytes. During decryption, the IV will be Base64-decoded before being supplied to AES-CBC. The IV is transportable alongside the encrypted payload and does not require encryption itself.
+
+b. JWS Algorithm/Type Validation: JWS validation will use an explicit allowlist of supported alg + typ combinations. RS256 + JWT is currently the only allowed combination, while the design permits additional explicitly supported combinations to be added later. alg is mandatory for all supported combinations, while typ is conditionally mandatory based on the requirements of the allowlisted combination. The allowlist is initially maintained within the decryption strategy, with the option to extract it into a dedicated JWS-specific module if the validation rules grow or require reuse.
+
+c. JWS Algorithm/Type Validation: The JWS_AES_RSA decryption strategy will validate incoming JWS tokens against an explicit allowlist of supported alg + typ combinations. The current allowed combination is RS256 + JWT. The allowlist is initially maintained within the decryption strategy, with the option to extract it into a dedicated JWS-specific .ts module under the JWS_AES_RSA folder if the validation rules grow or require reuse.
+
+d. JWS Error Handling: JWS validation and cryptographic failures will maintain distinct internal error conditions for diagnostics and troubleshooting. External responses will expose specific errors for harmless request-format or validation failures where appropriate, while security-sensitive failures will be mapped to generic external errors when revealing the specific failure could disclose sensitive information or assist request manipulation.
+
+e. JWS Validation and Payload Handling: The JWS_AES_RSA decryption flow will parse and validate the JWS protected header, validate the allowlisted alg + typ combination, and verify the JWS signature before treating the payload as trusted data. Payload decoding remains within the JWS strategy; shared encoding/decoding primitives may be extracted later where genuinely reusable.
+
+f. Shared Cryptographic Utilities: Common low-level cryptographic operations will be centralized into reusable utilities. AES will support mapped AES-CBC and AES-GCM encryption/decryption, while RSA will support mapped encryption/decryption and signing/verification. Common utilities will handle genuinely shared operations such as encoding/decoding, byte/string/ArrayBuffer conversions, random-byte generation, IV generation, and AES-key generation. Protocol-specific composition will remain within the respective cryptography strategies. Paired operations will remain grouped unless future complexity justifies separating them.
+
+g. Cryptographic Utility Algorithm Handling: Each cryptographic utility will maintain an explicit allowlist of supported algorithms/operations and enforce their algorithm-specific requirements. Protocol strategies will select the required cryptographic operation, while common crypto utilities will provide generic primitives such as secure random-byte generation. Algorithm-specific utilities will determine required key/IV sizes and request the necessary byte lengths from the common utilities.
+
+h. Common Cryptographic Utility: The common utility will provide genuinely reusable low-level primitives, initially including secure random-byte generation (generateRandomBytes(length)), Base64/Base64URL encoding and decoding, and byte/string/ArrayBuffer conversions. Algorithm- and protocol-specific logic will remain outside this utility. Additional generic primitives may be added later if required by the implementation.
+
+i. Cryptographic Utility Error Handling: Cryptographic utilities will detect and propagate technical failures without creating protocol-specific AppErrors or error messages. The respective strategy will interpret the failure and explicitly create the appropriate application-level error, allowing utilities to remain reusable and independent of protocol-specific error handling.
+
+j. Key and Certificate Handling: Certificate/key storage and resolution will remain separate from TLS configuration and cryptography strategies. A reusable key-management layer will initially resolve certificate/key material from the repository's certs storage, while remaining replaceable by future storage mechanisms without requiring changes to individual cryptography strategies. The layer will remain storage- and protocol-agnostic, allowing the same underlying key-management approach to support TLS and application-level cryptography independently.
+
+k. Cryptographic API Standardization: The new cryptographic utility layer will standardize on the Web Crypto API for supported cryptographic operations, rather than maintaining separate Node crypto and Web Crypto implementations. Canonical Web Crypto/standard cryptographic terminology will be used in code and algorithm allowlists; commonly encountered alternate/provider-specific names may be documented alongside them for reference. Protocol strategies will remain independent of the underlying cryptographic API.
+
+l. Cryptography Strategy Cleanup: Refactor JWE, AES_RSA, and JWS_AES_RSA strategies to delegate low-level cryptographic operations to the shared utilities while retaining protocol-specific validation, composition, orchestration, and response/error interpretation within the respective strategies. Exact responsibilities will be finalized during implementation based on the current code.
+
+m. Encrypted Wrapper Validation and Normalization: encWrapperValidator.ts will remain responsible for validating the external encrypted-wrapper structure and normalizing it into the explicit internal EncryptedWrapper representation. It will contain only generic, algorithm-independent validation; encryption/protocol-specific validation, such as IV length requirements, will remain with the applicable cryptographic strategy or utility. A separate normalization layer will not be introduced unless normalization complexity later justifies it.
+
+n. Payload State and Data Encryption Handling: payloadTypeIdentifier.ts will remain the centralized layer for identifying and validating the allowed Payload State ↔ Data Encryption combinations using an explicit allowlist, with VALID_COMBINATIONS as the source of truth. The request headers will be renamed from x-payload-type to X-Payload-State and from x-encryption-type to X-Data-Encryption. Redundant standalone validation Sets will not be maintained where the allowlist already provides the required validation. Header capture/storage mechanics remain part of the separate centralized header-handling discussion.
+
+o. Centralized Header Handling: RequestContext will maintain separate normalized collections for request and response headers using Record<string, string[]>. Header names will be normalized to lowercase, while single and multiple values will consistently be represented as arrays without losing information. Layers will perform explicit header lookups and extract only the headers they require; interpreted values such as PayloadState and DataEncryption may remain as typed context properties.
+
+p. Response Architecture: Keep response construction protocol-specific within the respective cryptography strategies, while maintaining the application response payload and response headers as separate RequestContext data. Common HTTP response handling will remain responsible only for delivering the finalized status, headers, and payload, without introducing protocol-specific response abstractions or unnecessary additional layers.
+
+q. Unified Plain-Payload Parsing: Cryptographic strategies will be responsible for decrypting/decoding the payload but will not perform application-level parsing. The decrypted application payload will be placed in context.requestRawBody, after which requestValidator.ts will perform the common content-type-based parsing and validation used by both plain and encrypted requests. A dedicated header will identify the decrypted payload's content type for encrypted requests, with the final header name to be decided during implementation. The corresponding response terminology will use context.responseRawBody for consistency.
+
+Roadmap:
+0. Baseline / repository review
+        ↓
+1. RequestContext foundation
+   - request headers
+   - response headers
+   - requestRawBody
+   - responseRawBody
+        ↓
+2. Centralized Header Handling
+   - normalize Node headers → Record<string, string[]>
+   - explicit header lookup
+   - update header consumers
+        ↓
+3. Payload State / Data Encryption refactor
+   - rename headers
+   - remove redundant Sets
+   - update VALID_COMBINATIONS usage
+        ↓
+4. Encrypted Wrapper Validation
+   - structural validation
+   - wrapper normalization
+   - generic IV/Base64 structural checks
+        ↓
+5. Key & Certificate Management
+   - extract key/certificate loading
+   - decouple strategies and TLS from storage
+        ↓
+6. Common Crypto Utility
+   - Web Crypto standardization
+   - random bytes
+   - encoding/decoding
+   - conversions
+        ↓
+7. AES Utility
+   - AES-CBC
+   - AES-GCM
+   - algorithm allowlist
+   - key/IV requirements
+        ↓
+8. RSA Utility
+   - RSA encryption/decryption
+   - RSA signing/verification
+   - algorithm allowlist
+        ↓
+9. JWE Strategy Refactor
+        ↓
+10. AES_RSA Strategy Refactor
+   - dynamic IV
+        ↓
+11. JWS_AES_RSA Strategy Refactor
+   - alg + typ allowlist
+   - JWS validation
+   - signature verification
+        ↓
+12. Unified requestRawBody + requestValidator Flow
+   - encrypted/plain convergence
+   - decrypted content-type handling
+   - move application parsing out of strategies
+        ↓
+13. Response Architecture
+   - responseRawBody
+   - response headers
+   - common HTTP response delivery
+        ↓
+14. Final Cleanup
+   - imports
+   - obsolete code
+   - naming
+   - dead/redundant logic
+        ↓
+15. Regression Testing
+   - existing plain flows
+   - existing encrypted flows
+   - new IV behavior
+   - headers
+   - validation/error paths
+        ↓
+16. Consolidated architecture.md Update

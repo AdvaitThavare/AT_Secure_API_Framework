@@ -10,9 +10,9 @@
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
-import { constants, createPrivateKey, publicEncrypt, randomBytes, sign, webcrypto } from 'node:crypto';
-import fs from 'node:fs';
-import { serverConfig } from '../../../serverManagement/serverConfig';
+import { constants, createPrivateKey, publicEncrypt, sign, webcrypto } from 'node:crypto';
+import { encodeBase64, encodeBase64Url, generateRandomBytes, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
+
 
 const { serverPrivateKey, clientPublicKey } = getCryptoFunctionKeys();
 
@@ -47,16 +47,18 @@ export async function encryptJWS_AES_RSA(
     let signedToken: string;
 
     try {
-        const protectedHeader = Buffer.from(
-            JSON.stringify({
-                alg: 'RS256',
-                typ: 'JWT',
-            })
-        ).toString('base64url');
+        const protectedHeader = encodeBase64Url(
+            stringToBytes(
+                JSON.stringify({
+                    alg: 'RS256',
+                    typ: 'JWT',
+                })
+            )
+        );
 
-        const payload = Buffer.from(
-            plaintext
-        ).toString('base64url');
+        const payload = encodeBase64Url(
+            stringToBytes(plaintext)
+        );
 
         const signingInput =
             `${protectedHeader}.${payload}`;
@@ -68,7 +70,7 @@ export async function encryptJWS_AES_RSA(
         );
 
         signedToken =
-            `${signingInput}.${signature.toString('base64url')}`;
+            `${signingInput}.${encodeBase64Url(signature)}`;
 
     } catch {
         return {
@@ -81,7 +83,7 @@ export async function encryptJWS_AES_RSA(
 
     // ===== Generate AES Key =====
 
-    const aesKeyBytes = randomBytes(32);
+    const aesKeyBytes = generateRandomBytes(32);
 
     // ===== AES-CBC Encryption =====
 
@@ -102,10 +104,10 @@ export async function encryptJWS_AES_RSA(
             await webcrypto.subtle.encrypt(
                 {
                     name: 'AES-CBC',
-                    iv: new TextEncoder().encode(IV),
+                    iv: stringToBytes(IV),
                 },
                 aesKey,
-                new TextEncoder().encode(signedToken)
+                stringToBytes(signedToken)
             );
 
     } catch {
@@ -142,12 +144,10 @@ export async function encryptJWS_AES_RSA(
     // ===== Final Output =====
 
     context.serviceResponse = {
-        encResPayload: Buffer.from(
-            encryptedBuffer
-        ).toString('base64'),
-
-        encResKey: encryptedKey.toString('base64'),
-
+        encResPayload: encodeBase64(
+            new Uint8Array(encryptedBuffer)
+        ),
+        encResKey: encodeBase64(encryptedKey),
     } satisfies JWSAESRSAResponse;
 
     return null;
