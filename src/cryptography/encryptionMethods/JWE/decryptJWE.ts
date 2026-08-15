@@ -10,12 +10,10 @@ import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
 import { privateDecrypt, constants, webcrypto, } from 'node:crypto';
 import fs from 'node:fs';
-import { serverConfig } from '../../../config/serverConfig';
+import { serverConfig } from '../../../serverManagement/serverConfig';
+import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
 
-const privateKey = fs.readFileSync(
-  serverConfig.certificates.key,
-  'utf8'
-);
+const { serverPrivateKey } = getCryptoFunctionKeys();
 
 export async function decryptJWE(
   context: RequestContext
@@ -50,7 +48,7 @@ export async function decryptJWE(
   try {
     cek = privateDecrypt(
       {
-        key: privateKey,
+        key: serverPrivateKey,
         padding: constants.RSA_PKCS1_OAEP_PADDING,
         oaepHash: 'sha256',
       },

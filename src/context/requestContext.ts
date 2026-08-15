@@ -4,12 +4,16 @@ import type { PayloadState, DataEncryption } from '../constants/cryptographyCons
 export type EncryptedWrapper = {
   payload: string;
   key?: string;
+  iv?: string;
 };
 
 export interface RequestContext {
   req: IncomingMessage;
   res: ServerResponse;
-  rawBody: string;
+  requestRawBody: string;
+  responseRawBody?: string;
+  requestHeaders: Record<string, string[]>;
+  responseHeaders: Record<string, string[]>;
   payload?: unknown;
   serviceResponse?: unknown;
   contentType: string;

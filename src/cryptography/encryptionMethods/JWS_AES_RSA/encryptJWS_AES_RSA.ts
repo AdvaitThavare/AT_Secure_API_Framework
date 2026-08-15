@@ -9,29 +9,12 @@
 
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
-
-import {
-    constants,
-    createPrivateKey,
-    publicEncrypt,
-    randomBytes,
-    sign,
-    webcrypto,
-} from 'node:crypto';
-
+import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
+import { constants, createPrivateKey, publicEncrypt, randomBytes, sign, webcrypto } from 'node:crypto';
 import fs from 'node:fs';
+import { serverConfig } from '../../../serverManagement/serverConfig';
 
-import { serverConfig } from '../../../config/serverConfig';
-
-const privateKey = fs.readFileSync(
-    serverConfig.certificates.key,
-    'utf8'
-);
-
-const publicKey = fs.readFileSync(
-    serverConfig.certificates.clientCert,
-    'utf8'
-);
+const { serverPrivateKey, clientPublicKey } = getCryptoFunctionKeys();
 
 export type JWSAESRSAResponse = {
     encResPayload: string;
@@ -81,7 +64,7 @@ export async function encryptJWS_AES_RSA(
         const signature = sign(
             'RSA-SHA256',
             Buffer.from(signingInput),
-            createPrivateKey(privateKey)
+            createPrivateKey(serverPrivateKey)
         );
 
         signedToken =
@@ -141,7 +124,7 @@ export async function encryptJWS_AES_RSA(
     try {
         encryptedKey = publicEncrypt(
             {
-                key: publicKey,
+                key: clientPublicKey,
                 padding: constants.RSA_PKCS1_PADDING,
             },
             aesKeyBytes

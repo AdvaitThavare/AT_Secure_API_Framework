@@ -9,28 +9,12 @@
 
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
-
-import {
-    constants,
-    createPublicKey,
-    privateDecrypt,
-    verify,
-    webcrypto,
-} from 'node:crypto';
-
+import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
+import { constants, createPublicKey, privateDecrypt, verify, webcrypto } from 'node:crypto';
 import fs from 'node:fs';
+import { serverConfig } from '../../../serverManagement/serverConfig';
 
-import { serverConfig } from '../../../config/serverConfig';
-
-const privateKey = fs.readFileSync(
-    serverConfig.certificates.key,
-    'utf8'
-);
-
-const publicKey = fs.readFileSync(
-    serverConfig.certificates.clientCert,
-    'utf8'
-);
+const { serverPrivateKey, clientPublicKey } = getCryptoFunctionKeys();
 
 const IV = 'asdfghjkasdfghjk';
 
@@ -47,7 +31,7 @@ export async function decryptJWS_AES_RSA(
     try {
         decryptedKey = privateDecrypt(
             {
-                key: privateKey,
+                key: serverPrivateKey,
                 padding: constants.RSA_PKCS1_PADDING,
             },
             Buffer.from(
@@ -151,7 +135,7 @@ export async function decryptJWS_AES_RSA(
         verified = verify(
             'RSA-SHA256',
             Buffer.from(signingInput),
-            createPublicKey(publicKey),
+            createPublicKey(clientPublicKey),
             Buffer.from(
                 encodedSignature,
                 'base64url'

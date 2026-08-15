@@ -12,7 +12,7 @@ export function requestValidator(
 
   if (contentType.includes('application/json')) {
     try {
-      context.payload = JSON.parse(context.rawBody);
+      context.payload = JSON.parse(context.requestRawBody);
     } catch {
       return {
         category: 'SERVER',
@@ -26,7 +26,7 @@ export function requestValidator(
   }
 
   if (contentType.includes('text/plain')) {
-    context.payload = context.rawBody;
+    context.payload = context.requestRawBody;
     return null;
   }
 

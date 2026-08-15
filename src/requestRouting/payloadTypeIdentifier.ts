@@ -3,9 +3,6 @@ import type { AppError } from '../errors/errorHandler';
 import { PAYLOAD_STATES, DATA_ENCRYPTIONS, type PayloadState, type DataEncryption } from '../constants/cryptographyConstants';
 import { HEADER_PAYLOAD_STATE, HEADER_DATA_ENCRYPTION } from '../constants/headerConstants';
 
-const payloadStateSet = new Set(PAYLOAD_STATES);
-const dataEncryptionSet = new Set(DATA_ENCRYPTIONS);
-
 const VALID_COMBINATIONS: Map<
   PayloadState,
   Set<DataEncryption>
@@ -34,10 +31,13 @@ export function payloadTypeIdentifier(
   context: RequestContext
 ): AppError | null {
 
-  const payloadState =
-    context.req.headers['x-payload-type'];
+  const payloadStateValues =
+    context.requestHeaders[HEADER_PAYLOAD_STATE];
 
-  if (Array.isArray(payloadState)) {
+  const dataEncryptionValues =
+    context.requestHeaders[HEADER_DATA_ENCRYPTION];
+
+  if (payloadStateValues?.length > 1) {
     return {
       category: 'SERVER',
       statusCode: 400,
@@ -46,10 +46,7 @@ export function payloadTypeIdentifier(
     };
   }
 
-  const dataEncryption =
-    context.req.headers[HEADER_DATA_ENCRYPTION]
-
-  if (Array.isArray(dataEncryption)) {
+  if (dataEncryptionValues?.length > 1) {
     return {
       category: 'SERVER',
       statusCode: 400,
@@ -60,12 +57,16 @@ export function payloadTypeIdentifier(
 
   // ===== Required Headers =====
 
+  const payloadState = payloadStateValues?.[0];
+  const dataEncryption = dataEncryptionValues?.[0];
+
+
   if (!payloadState) {
     return {
       category: 'SERVER',
       statusCode: 400,
       errorCode: 'MISSING_PAYLOAD_STATE',
-      message: 'Missing x-payload-type header',
+      message: 'Missing x-payload-state header',
     };
   }
 
@@ -74,7 +75,7 @@ export function payloadTypeIdentifier(
       category: 'SERVER',
       statusCode: 400,
       errorCode: 'MISSING_DATA_ENCRYPTION',
-      message: 'Missing x-encryption-type header',
+      message: 'Missing x-data-encryption header',
     };
   }
 

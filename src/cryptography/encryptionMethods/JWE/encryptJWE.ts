@@ -10,12 +10,10 @@ import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
 import { constants, publicEncrypt, randomBytes, webcrypto } from 'node:crypto';
 import fs from 'node:fs';
-import { serverConfig } from '../../../config/serverConfig';
+import { serverConfig } from '../../../serverManagement/serverConfig';
+import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
 
-const publicKey = fs.readFileSync(
-  serverConfig.certificates.clientCert,
-  'utf8'
-);
+const { clientPublicKey } = getCryptoFunctionKeys();
 
 export type JWEResponse = {
   encResPayload: string;
@@ -112,7 +110,7 @@ export async function encryptJWE(
   try {
     encryptedKey = publicEncrypt(
       {
-        key: publicKey,
+        key: clientPublicKey,
         padding: constants.RSA_PKCS1_OAEP_PADDING,
         oaepHash: 'sha256',
       },

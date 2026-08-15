@@ -9,22 +9,12 @@
 
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
-
-import {
-    constants,
-    publicEncrypt,
-    randomBytes,
-    webcrypto,
-} from 'node:crypto';
-
+import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
+import {constants, publicEncrypt, randomBytes, webcrypto, } from 'node:crypto';
 import fs from 'node:fs';
+import { serverConfig } from '../../../serverManagement/serverConfig';
 
-import { serverConfig } from '../../../config/serverConfig';
-
-const publicKey = fs.readFileSync(
-    serverConfig.certificates.clientCert,
-    'utf8'
-);
+const { clientPublicKey } = getCryptoFunctionKeys();
 
 export type AESRSAResponse = {
     encResPayload: string;
@@ -93,7 +83,7 @@ export async function encryptAES_RSA(
     try {
         encryptedKey = publicEncrypt(
             {
-                key: publicKey,
+                key: clientPublicKey,
                 padding: constants.RSA_PKCS1_PADDING,
             },
             aesKeyBytes
