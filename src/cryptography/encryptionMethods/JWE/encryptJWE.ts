@@ -8,9 +8,11 @@
 
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
-import { constants, publicEncrypt, webcrypto } from 'node:crypto';
+import { constants, } from 'node:crypto';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
 import { encodeBase64Url, generateRandomBytes, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
+import { encryptAES_GCM } from '../../cryptoAlgorithms/AES_Utility/AES_GCM';
+import { encryptRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Crypto';
 
 
 const { clientPublicKey } = getCryptoFunctionKeys();
@@ -63,25 +65,12 @@ export async function encryptJWE(
   let encryptedBuffer: ArrayBuffer;
 
   try {
-    const aesKey = await webcrypto.subtle.importKey(
-      'raw',
-      new Uint8Array(cek),
-      {
-        name: 'AES-GCM',
-      },
-      false,
-      ['encrypt']
-    );
-
-    encryptedBuffer = await webcrypto.subtle.encrypt(
-      {
-        name: 'AES-GCM',
-        iv,
-        additionalData: stringToBytes(protectedHeader),
-        tagLength: 128,
-      },
-      aesKey,
-      stringToBytes(plaintext)
+    encryptedBuffer = await encryptAES_GCM(
+      cek,
+      iv,
+      stringToBytes(plaintext),
+      stringToBytes(protectedHeader),
+      128
     );
   } catch {
     return {
@@ -110,13 +99,11 @@ export async function encryptJWE(
   let encryptedKey: Buffer;
 
   try {
-    encryptedKey = publicEncrypt(
-      {
-        key: clientPublicKey,
-        padding: constants.RSA_PKCS1_OAEP_PADDING,
-        oaepHash: 'sha256',
-      },
-      cek
+    encryptedKey = encryptRSA(
+      clientPublicKey,
+      cek,
+      constants.RSA_PKCS1_OAEP_PADDING,
+      'sha256'
     );
   } catch {
     return {

@@ -8,9 +8,11 @@
 
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
-import { privateDecrypt, constants, webcrypto, } from 'node:crypto';
+import { constants, } from 'node:crypto';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
 import { bytesToString, decodeBase64Url, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
+import { decryptAES_GCM } from '../../cryptoAlgorithms/AES_Utility/AES_GCM';
+import { decryptRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Crypto';
 
 const { serverPrivateKey } = getCryptoFunctionKeys();
 
@@ -45,13 +47,11 @@ export async function decryptJWE(
   let cek: Buffer;
 
   try {
-    cek = privateDecrypt(
-      {
-        key: serverPrivateKey,
-        padding: constants.RSA_PKCS1_OAEP_PADDING,
-        oaepHash: 'sha256',
-      },
-      decodeBase64Url(encryptedKey)
+    cek = decryptRSA(
+      serverPrivateKey,
+      decodeBase64Url(encryptedKey),
+      constants.RSA_PKCS1_OAEP_PADDING,
+      'sha256'
     );
   } catch {
     return {
@@ -82,39 +82,20 @@ export async function decryptJWE(
   let decryptedBuffer: ArrayBuffer;
 
   try {
-
-    const aesKey =
-      await webcrypto.subtle.importKey(
-        'raw',
-        new Uint8Array(cek),
-        {
-          name: 'AES-GCM',
-        },
-        false,
-        ['decrypt']
-      );
-
-    decryptedBuffer =
-      await webcrypto.subtle.decrypt(
-        {
-          name: 'AES-GCM',
-          iv: ivBytes,
-          additionalData: aad,
-          tagLength: 128,
-        },
-        aesKey,
-        encryptedPayload
-      );
-
+    decryptedBuffer = await decryptAES_GCM(
+      new Uint8Array(cek),
+      ivBytes,
+      encryptedPayload,
+      aad,
+      128
+    );
   } catch {
-
     return {
       category: 'SERVER',
       statusCode: 400,
       errorCode: 'INVALID_JWE_PAYLOAD',
       message: 'Failed to decrypt JWE payload',
     };
-
   }
 
   // ===== Final Output =====

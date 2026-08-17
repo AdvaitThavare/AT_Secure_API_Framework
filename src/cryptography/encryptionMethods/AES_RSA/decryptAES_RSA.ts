@@ -9,14 +9,13 @@
 
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
-import { constants, privateDecrypt, webcrypto, } from 'node:crypto';
+import { constants, } from 'node:crypto';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
-import { bytesToString, decodeBase64, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
-
+import { bytesToString, decodeBase64 } from '../../commonCrypto/commonCryptoUtilities';
+import { decryptAES_CBC } from '../../cryptoAlgorithms/AES_Utility/AES_CBC';
+import { decryptRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Crypto';
 
 const { serverPrivateKey } = getCryptoFunctionKeys();
-
-const IV = 'asdfghjkasdfghjk';
 
 export async function decryptAES_RSA(
     context: RequestContext
@@ -28,12 +27,10 @@ export async function decryptAES_RSA(
     let decryptedKey: Buffer;
 
     try {
-        decryptedKey = privateDecrypt(
-            {
-                key: serverPrivateKey,
-                padding: constants.RSA_PKCS1_PADDING,
-            },
-            decodeBase64(wrapper!.key!)
+        decryptedKey = decryptRSA(
+            serverPrivateKey,
+            decodeBase64(wrapper!.key!),
+            constants.RSA_PKCS1_PADDING
         );
     } catch {
         return {
@@ -46,33 +43,20 @@ export async function decryptAES_RSA(
 
     // ===== Convert AES Parameters =====
 
-    const iv = stringToBytes(IV);
-
     const encryptedPayload = decodeBase64(
         wrapper!.payload
     );
+
+    const iv = decodeBase64(wrapper!.iv!);
 
     // ===== AES-CBC Decryption =====
 
     let decryptedBuffer: ArrayBuffer;
 
     try {
-        const aesKey = await webcrypto.subtle.importKey(
-            'raw',
+        decryptedBuffer = await decryptAES_CBC(
             new Uint8Array(decryptedKey),
-            {
-                name: 'AES-CBC',
-            },
-            false,
-            ['decrypt']
-        );
-
-        decryptedBuffer = await webcrypto.subtle.decrypt(
-            {
-                name: 'AES-CBC',
-                iv,
-            },
-            aesKey,
+            iv,
             encryptedPayload
         );
     } catch {
@@ -90,7 +74,7 @@ export async function decryptAES_RSA(
         const decryptedString = bytesToString(
             decryptedBuffer
         );
-
+// console.log(decryptedString)
         context.payload = JSON.parse(decryptedString);
 
         return null;

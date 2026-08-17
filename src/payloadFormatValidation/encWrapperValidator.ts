@@ -1,4 +1,5 @@
 import type { RequestContext } from '../context/requestContext';
+import { decodeBase64, encodeBase64 } from '../cryptography/commonCrypto/commonCryptoUtilities';
 import type { AppError } from '../errors/errorHandler';
 
 const WRAPPER_REQUIREMENTS = {
@@ -23,11 +24,11 @@ const ALLOWED_IV_BASE64_LENGTHS = new Set([16, 24]);
 
 function isValidBase64(value: string): boolean {
     try {
-        const decoded = Buffer.from(value, 'base64');
+        const decoded = decodeBase64(value);
 
         return (
             decoded.length > 0 &&
-            Buffer.from(decoded).toString('base64') === value
+            encodeBase64(decoded) === value
         );
     } catch {
         return false;
@@ -185,9 +186,8 @@ export function encWrapperValidator(
 
         // ===== IV Decoded Length =====
 
-        const decodedIv =
-            Buffer.from(wrapper.iv, 'base64');
-
+        const decodedIv = decodeBase64(wrapper.iv);
+            
         if (
             decodedIv.length !== 12 &&
             decodedIv.length !== 16

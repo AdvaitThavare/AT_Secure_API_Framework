@@ -10,18 +10,19 @@
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
-import { constants, createPrivateKey, publicEncrypt, sign, webcrypto } from 'node:crypto';
+import { constants, createPrivateKey, } from 'node:crypto';
 import { encodeBase64, encodeBase64Url, generateRandomBytes, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
-
+import { encryptAES_CBC } from '../../cryptoAlgorithms/AES_Utility/AES_CBC';
+import { signRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Signature';
+import { encryptRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Crypto';
 
 const { serverPrivateKey, clientPublicKey } = getCryptoFunctionKeys();
 
 export type JWSAESRSAResponse = {
     encResPayload: string;
     encResKey: string;
+    iv: string;
 };
-
-const IV = 'asdfghjkasdfghjk';
 
 export async function encryptJWS_AES_RSA(
     context: RequestContext
@@ -63,10 +64,10 @@ export async function encryptJWS_AES_RSA(
         const signingInput =
             `${protectedHeader}.${payload}`;
 
-        const signature = sign(
-            'RSA-SHA256',
-            Buffer.from(signingInput),
-            createPrivateKey(serverPrivateKey)
+        const signature = signRSA(
+            createPrivateKey(serverPrivateKey),
+            stringToBytes(signingInput),
+            'RSA-SHA256'
         );
 
         signedToken =
@@ -84,32 +85,20 @@ export async function encryptJWS_AES_RSA(
     // ===== Generate AES Key =====
 
     const aesKeyBytes = generateRandomBytes(32);
+    const iv = generateRandomBytes(16);
 
     // ===== AES-CBC Encryption =====
 
     let encryptedBuffer: ArrayBuffer;
 
+
+
     try {
-        const aesKey = await webcrypto.subtle.importKey(
-            'raw',
-            new Uint8Array(aesKeyBytes),
-            {
-                name: 'AES-CBC',
-            },
-            false,
-            ['encrypt']
+        encryptedBuffer = await encryptAES_CBC(
+            aesKeyBytes,
+            iv,
+            stringToBytes(signedToken)
         );
-
-        encryptedBuffer =
-            await webcrypto.subtle.encrypt(
-                {
-                    name: 'AES-CBC',
-                    iv: stringToBytes(IV),
-                },
-                aesKey,
-                stringToBytes(signedToken)
-            );
-
     } catch {
         return {
             category: 'SERVER',
@@ -124,14 +113,11 @@ export async function encryptJWS_AES_RSA(
     let encryptedKey: Buffer;
 
     try {
-        encryptedKey = publicEncrypt(
-            {
-                key: clientPublicKey,
-                padding: constants.RSA_PKCS1_PADDING,
-            },
-            aesKeyBytes
+        encryptedKey = encryptRSA(
+            clientPublicKey,
+            aesKeyBytes,
+            constants.RSA_PKCS1_PADDING
         );
-
     } catch {
         return {
             category: 'SERVER',
@@ -148,7 +134,8 @@ export async function encryptJWS_AES_RSA(
             new Uint8Array(encryptedBuffer)
         ),
         encResKey: encodeBase64(encryptedKey),
+        iv: encodeBase64(iv),
     } satisfies JWSAESRSAResponse;
-
+    
     return null;
 }

@@ -10,19 +10,18 @@
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
-import {constants, publicEncrypt, webcrypto, } from 'node:crypto';
+import { constants, } from 'node:crypto';
 import { encodeBase64, generateRandomBytes, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
-
+import { encryptAES_CBC } from '../../cryptoAlgorithms/AES_Utility/AES_CBC';
+import { encryptRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Crypto';
 
 const { clientPublicKey } = getCryptoFunctionKeys();
 
 export type AESRSAResponse = {
     encResPayload: string;
     encResKey: string;
+    iv: string;
 };
-
-const IV = 'asdfghjkasdfghjk';
-
 export async function encryptAES_RSA(
     context: RequestContext
 ): Promise<AppError | null> {
@@ -48,23 +47,12 @@ export async function encryptAES_RSA(
 
     let encryptedBuffer: ArrayBuffer;
 
-    try {
-        const aesKey = await webcrypto.subtle.importKey(
-            'raw',
-            new Uint8Array(aesKeyBytes),
-            {
-                name: 'AES-CBC',
-            },
-            false,
-            ['encrypt']
-        );
+    const iv = generateRandomBytes(16);
 
-        encryptedBuffer = await webcrypto.subtle.encrypt(
-            {
-                name: 'AES-CBC',
-                iv: stringToBytes(IV),
-            },
-            aesKey,
+    try {
+        encryptedBuffer = await encryptAES_CBC(
+            aesKeyBytes,
+            iv,
             stringToBytes(plaintext)
         );
     } catch {
@@ -81,12 +69,10 @@ export async function encryptAES_RSA(
     let encryptedKey: Buffer;
 
     try {
-        encryptedKey = publicEncrypt(
-            {
-                key: clientPublicKey,
-                padding: constants.RSA_PKCS1_PADDING,
-            },
-            aesKeyBytes
+        encryptedKey = encryptRSA(
+            clientPublicKey,
+            aesKeyBytes,
+            constants.RSA_PKCS1_PADDING
         );
     } catch {
         return {
@@ -102,6 +88,7 @@ export async function encryptAES_RSA(
     context.serviceResponse = {
         encResPayload: encodeBase64(new Uint8Array(encryptedBuffer)),
         encResKey: encodeBase64(encryptedKey),
+        iv: encodeBase64(iv),
     } satisfies AESRSAResponse;
 
     return null;

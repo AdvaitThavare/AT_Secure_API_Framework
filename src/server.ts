@@ -82,6 +82,7 @@ const server = https.createServer(
           return;
         }
       }
+      // console.log("Services are working FINE")
       sendResponse(
         res,
         contentType.includes('application/json')

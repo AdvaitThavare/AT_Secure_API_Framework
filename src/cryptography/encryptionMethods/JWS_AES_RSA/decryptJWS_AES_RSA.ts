@@ -10,13 +10,13 @@
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
-import { constants, createPublicKey, privateDecrypt, verify, webcrypto } from 'node:crypto';
+import { constants, createPublicKey, } from 'node:crypto';
 import { bytesToString, decodeBase64, decodeBase64Url, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
-
+import { decryptAES_CBC } from '../../cryptoAlgorithms/AES_Utility/AES_CBC';
+import { verifyRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Signature';
+import { decryptRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Crypto';
 
 const { serverPrivateKey, clientPublicKey } = getCryptoFunctionKeys();
-
-const IV = 'asdfghjkasdfghjk';
 
 export async function decryptJWS_AES_RSA(
     context: RequestContext
@@ -29,14 +29,11 @@ export async function decryptJWS_AES_RSA(
     let decryptedKey: Buffer;
 
     try {
-        decryptedKey = privateDecrypt(
-            {
-                key: serverPrivateKey,
-                padding: constants.RSA_PKCS1_PADDING,
-            },
-            decodeBase64(wrapper!.key!)
+        decryptedKey = decryptRSA(
+            serverPrivateKey,
+            decodeBase64(wrapper!.key!),
+            constants.RSA_PKCS1_PADDING
         );
-
     } catch {
         return {
             category: 'SERVER',
@@ -50,28 +47,14 @@ export async function decryptJWS_AES_RSA(
 
     let decryptedBuffer: ArrayBuffer;
 
+    const iv = decodeBase64(wrapper!.iv!);
+
     try {
-        const aesKey =
-            await webcrypto.subtle.importKey(
-                'raw',
-                new Uint8Array(decryptedKey),
-                {
-                    name: 'AES-CBC',
-                },
-                false,
-                ['decrypt']
-            );
-
-        decryptedBuffer =
-            await webcrypto.subtle.decrypt(
-                {
-                    name: 'AES-CBC',
-                    iv: stringToBytes(IV),
-                },
-                aesKey,
-                decodeBase64(wrapper!.payload)
-            );
-
+        decryptedBuffer = await decryptAES_CBC(
+            new Uint8Array(decryptedKey),
+            iv,
+            decodeBase64(wrapper!.payload)
+        );
     } catch {
         return {
             category: 'SERVER',
@@ -126,11 +109,11 @@ export async function decryptJWS_AES_RSA(
         const signingInput =
             `${protectedHeader}.${encodedPayload}`;
 
-        verified = verify(
-            'RSA-SHA256',
-            Buffer.from(signingInput),
+        verified = verifyRSA(
             createPublicKey(clientPublicKey),
-            decodeBase64Url(encodedSignature)
+            stringToBytes(signingInput),
+            decodeBase64Url(encodedSignature),
+            'RSA-SHA256'
         );
 
     } catch {
