@@ -10,10 +10,10 @@
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
-import { constants, } from 'node:crypto';
 import { encodeBase64, generateRandomBytes, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
 import { encryptAES_CBC } from '../../cryptoAlgorithms/AES_Utility/AES_CBC';
 import { encryptRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Crypto';
+import type { CryptoExecutionContext } from '../../CryptoExecutionContext';
 
 const { clientPublicKey } = getCryptoFunctionKeys();
 
@@ -23,11 +23,15 @@ export type AESRSAResponse = {
     iv: string;
 };
 export async function encryptAES_RSA(
-    context: RequestContext
+    context: RequestContext,
+    cryptoExecutionContext: CryptoExecutionContext
 ): Promise<AppError | null> {
     // ===== Generate AES Key =====
 
-    const aesKeyBytes = generateRandomBytes(32);
+    const aesKeyBytes = generateRandomBytes(
+        cryptoExecutionContext.aes?.keyLength! / 8
+    );
+
     // ===== Convert Payload to JSON =====
 
     let plaintext: string;
@@ -47,7 +51,9 @@ export async function encryptAES_RSA(
 
     let encryptedBuffer: ArrayBuffer;
 
-    const iv = generateRandomBytes(16);
+    const iv = generateRandomBytes(
+        cryptoExecutionContext.aes?.ivLength!
+    );
 
     try {
         encryptedBuffer = await encryptAES_CBC(
@@ -72,7 +78,7 @@ export async function encryptAES_RSA(
         encryptedKey = encryptRSA(
             clientPublicKey,
             aesKeyBytes,
-            constants.RSA_PKCS1_PADDING
+            cryptoExecutionContext.rsa?.padding!
         );
     } catch {
         return {

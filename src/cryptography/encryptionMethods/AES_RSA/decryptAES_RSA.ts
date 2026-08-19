@@ -14,13 +14,33 @@ import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionK
 import { bytesToString, decodeBase64 } from '../../commonCrypto/commonCryptoUtilities';
 import { decryptAES_CBC } from '../../cryptoAlgorithms/AES_Utility/AES_CBC';
 import { decryptRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Crypto';
+import type { CryptoExecutionContext } from '../../CryptoExecutionContext';
 
 const { serverPrivateKey } = getCryptoFunctionKeys();
 
 export async function decryptAES_RSA(
-    context: RequestContext
+    context: RequestContext,
+    cryptoExecutionContext: CryptoExecutionContext
 ): Promise<AppError | null> {
     const wrapper = context.encryptedWrapper;
+
+    // ===== Convert AES Parameters =====
+
+    const encryptedPayload = decodeBase64(
+        wrapper!.payload
+    );
+
+    const iv = decodeBase64(wrapper!.iv!);
+
+    // ===== Store Cryptographic Execution Context -1 =====
+
+    cryptoExecutionContext.aes = {
+        ivLength: iv.length,
+    };
+
+    cryptoExecutionContext.rsa = {
+        padding: constants.RSA_PKCS1_PADDING,
+    };
 
     // ===== RSA Decryption =====
 
@@ -30,7 +50,7 @@ export async function decryptAES_RSA(
         decryptedKey = decryptRSA(
             serverPrivateKey,
             decodeBase64(wrapper!.key!),
-            constants.RSA_PKCS1_PADDING
+            cryptoExecutionContext.rsa.padding!
         );
     } catch {
         return {
@@ -41,13 +61,9 @@ export async function decryptAES_RSA(
         };
     }
 
-    // ===== Convert AES Parameters =====
+    // ===== Store Cryptographic Execution Context -2 =====
 
-    const encryptedPayload = decodeBase64(
-        wrapper!.payload
-    );
-
-    const iv = decodeBase64(wrapper!.iv!);
+    cryptoExecutionContext.aes.keyLength = decryptedKey.length * 8;
 
     // ===== AES-CBC Decryption =====
 
@@ -74,7 +90,7 @@ export async function decryptAES_RSA(
         const decryptedString = bytesToString(
             decryptedBuffer
         );
-// console.log(decryptedString)
+        // console.log(decryptedString)
         context.payload = JSON.parse(decryptedString);
 
         return null;

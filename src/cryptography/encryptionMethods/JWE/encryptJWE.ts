@@ -8,11 +8,11 @@
 
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
-import { constants, } from 'node:crypto';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
 import { encodeBase64Url, generateRandomBytes, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
 import { encryptAES_GCM } from '../../cryptoAlgorithms/AES_Utility/AES_GCM';
 import { encryptRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Crypto';
+import type { CryptoExecutionContext } from '../../CryptoExecutionContext';
 
 
 const { clientPublicKey } = getCryptoFunctionKeys();
@@ -22,7 +22,8 @@ export type JWEResponse = {
 };
 
 export async function encryptJWE(
-  context: RequestContext
+  context: RequestContext,
+  cryptoExecutionContext: CryptoExecutionContext
 ): Promise<AppError | null> {
 
   // ===== Protected Header =====
@@ -30,9 +31,9 @@ export async function encryptJWE(
   const protectedHeader = encodeBase64Url(
     stringToBytes(
       JSON.stringify({
-        alg: 'RSA-OAEP-256',
-        enc: 'A256GCM',
-        typ: 'JWE',
+        alg: cryptoExecutionContext.protocol?.alg,
+        enc: cryptoExecutionContext.protocol?.enc,
+        typ: cryptoExecutionContext.protocol?.typ,
       })
     )
   );
@@ -70,7 +71,7 @@ export async function encryptJWE(
       iv,
       stringToBytes(plaintext),
       stringToBytes(protectedHeader),
-      128
+      cryptoExecutionContext.aes!.tagLength!
     );
   } catch {
     return {
@@ -85,13 +86,16 @@ export async function encryptJWE(
 
   const encryptedBytes = new Uint8Array(encryptedBuffer);
 
+  const tagLengthBytes =
+    cryptoExecutionContext.aes!.tagLength! / 8;
+
   const cipherText = encryptedBytes.slice(
     0,
-    encryptedBytes.length - 16
+    encryptedBytes.length - tagLengthBytes
   );
 
   const authenticationTag = encryptedBytes.slice(
-    encryptedBytes.length - 16
+    encryptedBytes.length - tagLengthBytes
   );
 
   // ===== RSA Encryption =====
@@ -102,8 +106,8 @@ export async function encryptJWE(
     encryptedKey = encryptRSA(
       clientPublicKey,
       cek,
-      constants.RSA_PKCS1_OAEP_PADDING,
-      'sha256'
+      cryptoExecutionContext.rsa!.padding!,
+      cryptoExecutionContext.rsa!.oaepHash!
     );
   } catch {
     return {

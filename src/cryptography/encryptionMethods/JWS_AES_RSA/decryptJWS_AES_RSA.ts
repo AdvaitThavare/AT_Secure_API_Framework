@@ -12,14 +12,17 @@ import type { AppError } from '../../../errors/errorHandler';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
 import { constants, createPublicKey, } from 'node:crypto';
 import { bytesToString, decodeBase64, decodeBase64Url, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
+import { verifyAndGetJWSAlgorithm } from '../../algorithmAllowlist/JWSAllowlist';
 import { decryptAES_CBC } from '../../cryptoAlgorithms/AES_Utility/AES_CBC';
 import { verifyRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Signature';
 import { decryptRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Crypto';
+import type { CryptoExecutionContext } from '../../CryptoExecutionContext';
 
 const { serverPrivateKey, clientPublicKey } = getCryptoFunctionKeys();
 
 export async function decryptJWS_AES_RSA(
-    context: RequestContext
+    context: RequestContext,
+    cryptoExecutionContext: CryptoExecutionContext
 ): Promise<AppError | null> {
 
     const wrapper = context.encryptedWrapper;
@@ -83,28 +86,71 @@ export async function decryptJWS_AES_RSA(
         };
     }
 
+    // ===== Split JWS =====
+
+    const parts = signedToken.split('.');
+
+    if (parts.length !== 3) {
+        return {
+            category: 'SERVER',
+            statusCode: 400,
+            errorCode: 'INVALID_JWS',
+            message: 'Invalid JWS format',
+        };
+    }
+
+    const [
+        protectedHeader,
+        encodedPayload,
+        encodedSignature,
+    ] = parts;
+
     // ===== Verify JWS =====
 
     let verified: boolean;
 
-    try {
-        const parts =
-            signedToken.split('.');
+    // ===== Decode Protected Header =====
 
-        if (parts.length !== 3) {
+    try {
+        const header = JSON.parse(
+            bytesToString(
+                decodeBase64Url(protectedHeader)
+            )
+        );
+
+        // ===== Verify JWS Algorithm =====
+
+        const algorithmConfiguration =
+            verifyAndGetJWSAlgorithm(
+                header.alg ?? '',
+                header.typ ?? ''
+            );
+
+        if (!algorithmConfiguration) {
             return {
                 category: 'SERVER',
                 statusCode: 400,
-                errorCode: 'INVALID_JWS',
-                message: 'Invalid JWS format',
+                errorCode: 'UNSUPPORTED_JWS_ALGORITHM',
+                message: 'Unsupported JWS algorithm combination',
             };
         }
 
-        const [
-            protectedHeader,
-            encodedPayload,
-            encodedSignature,
-        ] = parts;
+        // ===== Store Cryptographic Execution Context =====
+
+        cryptoExecutionContext.protocol = {
+            alg: header.alg,
+            typ: header.typ,
+        };
+
+        cryptoExecutionContext.rsa = {
+            padding: constants.RSA_PKCS1_PADDING,
+        };
+
+        cryptoExecutionContext.signature = {
+            algorithm: algorithmConfiguration.signatureAlgorithm,
+        };
+
+        // ===== Verify Signature =====
 
         const signingInput =
             `${protectedHeader}.${encodedPayload}`;
@@ -113,7 +159,7 @@ export async function decryptJWS_AES_RSA(
             createPublicKey(clientPublicKey),
             stringToBytes(signingInput),
             decodeBase64Url(encodedSignature),
-            'RSA-SHA256'
+            algorithmConfiguration.signatureAlgorithm
         );
 
     } catch {
@@ -137,9 +183,6 @@ export async function decryptJWS_AES_RSA(
     // ===== Extract JWS Payload =====
 
     try {
-        const encodedPayload =
-            signedToken.split('.')[1];
-
         const decryptedString =
             bytesToString(
                 decodeBase64Url(encodedPayload)

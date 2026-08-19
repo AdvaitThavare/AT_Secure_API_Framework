@@ -1,5 +1,4 @@
 import https from 'node:https';
-import fs from 'node:fs';
 import { serverConfig } from './serverManagement/serverConfig';
 import { getTLSConfig } from './serverManagement/tlsConfig';
 import { sendError } from './errors/errorHandler';
@@ -51,6 +50,8 @@ const server = https.createServer(
         return;
       }
 
+      let cryptoExecutionContext;
+
       if (context.payloadType === 'ENCRYPTED') {
 
         const wrapperError = encWrapperValidator(context);
@@ -59,11 +60,14 @@ const server = https.createServer(
           return;
         }
 
-        const decryptError = await decryptPayload(context);
-        if (decryptError) {
-          sendError(res, decryptError);
+        const decryptResult = await decryptPayload(context);
+
+        if (decryptResult.error) {
+          sendError(res, decryptResult.error);
           return;
         }
+        cryptoExecutionContext = decryptResult.cryptoExecutionContext;
+
       }
 
       const validationError = requestValidator(context);
@@ -76,7 +80,10 @@ const server = https.createServer(
       context.serviceResponse = serviceDispatcher(route, context.payload);
 
       if (context.payloadType === 'ENCRYPTED') {
-        const encryptError = await encryptPayload(context);
+        const encryptError = await encryptPayload(
+          context,
+          cryptoExecutionContext!
+        );
         if (encryptError) {
           sendError(res, encryptError);
           return;

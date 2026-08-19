@@ -10,11 +10,12 @@
 import type { RequestContext } from '../../../context/requestContext';
 import type { AppError } from '../../../errors/errorHandler';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
-import { constants, createPrivateKey, } from 'node:crypto';
+import { createPrivateKey, } from 'node:crypto';
 import { encodeBase64, encodeBase64Url, generateRandomBytes, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
 import { encryptAES_CBC } from '../../cryptoAlgorithms/AES_Utility/AES_CBC';
 import { signRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Signature';
 import { encryptRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Crypto';
+import type { CryptoExecutionContext } from '../../CryptoExecutionContext';
 
 const { serverPrivateKey, clientPublicKey } = getCryptoFunctionKeys();
 
@@ -25,7 +26,8 @@ export type JWSAESRSAResponse = {
 };
 
 export async function encryptJWS_AES_RSA(
-    context: RequestContext
+    context: RequestContext,
+    cryptoExecutionContext: CryptoExecutionContext
 ): Promise<AppError | null> {
 
     // ===== Convert Payload to JSON =====
@@ -51,8 +53,8 @@ export async function encryptJWS_AES_RSA(
         const protectedHeader = encodeBase64Url(
             stringToBytes(
                 JSON.stringify({
-                    alg: 'RS256',
-                    typ: 'JWT',
+                    alg: cryptoExecutionContext.protocol?.alg,
+                    typ: cryptoExecutionContext.protocol?.typ,
                 })
             )
         );
@@ -67,7 +69,7 @@ export async function encryptJWS_AES_RSA(
         const signature = signRSA(
             createPrivateKey(serverPrivateKey),
             stringToBytes(signingInput),
-            'RSA-SHA256'
+            cryptoExecutionContext.signature?.algorithm!
         );
 
         signedToken =
@@ -90,8 +92,6 @@ export async function encryptJWS_AES_RSA(
     // ===== AES-CBC Encryption =====
 
     let encryptedBuffer: ArrayBuffer;
-
-
 
     try {
         encryptedBuffer = await encryptAES_CBC(
@@ -116,7 +116,7 @@ export async function encryptJWS_AES_RSA(
         encryptedKey = encryptRSA(
             clientPublicKey,
             aesKeyBytes,
-            constants.RSA_PKCS1_PADDING
+            cryptoExecutionContext.rsa?.padding!
         );
     } catch {
         return {
@@ -136,6 +136,6 @@ export async function encryptJWS_AES_RSA(
         encResKey: encodeBase64(encryptedKey),
         iv: encodeBase64(iv),
     } satisfies JWSAESRSAResponse;
-    
+
     return null;
 }

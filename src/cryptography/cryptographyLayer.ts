@@ -1,5 +1,6 @@
 import type { RequestContext } from '../context/requestContext';
 import type { AppError } from '../errors/errorHandler';
+import type { CryptoExecutionContext } from './CryptoExecutionContext';
 import { decryptJWE } from './encryptionMethods/JWE/decryptJWE';
 import { encryptJWE } from './encryptionMethods/JWE/encryptJWE';
 import { decryptAES_RSA } from './encryptionMethods/AES_RSA/decryptAES_RSA';
@@ -8,77 +9,101 @@ import { decryptJWS_AES_RSA } from './encryptionMethods/JWS_AES_RSA/decryptJWS_A
 import { encryptJWS_AES_RSA } from './encryptionMethods/JWS_AES_RSA/encryptJWS_AES_RSA';
 
 type CryptoHandler = (
-  context: RequestContext
+    context: RequestContext,
+    cryptoExecutionContext: CryptoExecutionContext
 ) => Promise<AppError | null>;
 
 type CryptoStrategy = {
-  decrypt: CryptoHandler;
-  encrypt: CryptoHandler;
+    decrypt: CryptoHandler;
+    encrypt: CryptoHandler;
+};
+
+export type DecryptPayloadResult = {
+    error: AppError | null;
+    cryptoExecutionContext: CryptoExecutionContext;
 };
 
 // ===== Public API =====
 
 export async function decryptPayload(
-  context: RequestContext
-): Promise<AppError | null> {
-  const handler = cryptoHandlers.get(
-    context.encryptionType ?? ''
-  );
+    context: RequestContext
+): Promise<DecryptPayloadResult> {
 
-  if (!handler) {
+    const cryptoExecutionContext: CryptoExecutionContext = {};
+
+    const handler = cryptoHandlers.get(
+        context.encryptionType ?? ''
+    );
+
+    if (!handler) {
+        return {
+            error: {
+                category: 'SERVER',
+                statusCode: 400,
+                errorCode: 'INVALID_ENCRYPTION_TYPE',
+                message: 'Unsupported encryption type',
+            },
+            cryptoExecutionContext,
+        };
+    }
+
+    const error = await handler.decrypt(
+        context,
+        cryptoExecutionContext
+    );
+
     return {
-      category: 'SERVER',
-      statusCode: 400,
-      errorCode: 'INVALID_ENCRYPTION_TYPE',
-      message: 'Unsupported encryption type',
+        error,
+        cryptoExecutionContext,
     };
-  }
-
-  return await handler.decrypt(context);
 }
 
 export async function encryptPayload(
-  context: RequestContext
+    context: RequestContext,
+    cryptoExecutionContext: CryptoExecutionContext
 ): Promise<AppError | null> {
-  const handler = cryptoHandlers.get(
-    context.encryptionType ?? ''
-  );
 
-  if (!handler) {
-    return {
-      category: 'SERVER',
-      statusCode: 400,
-      errorCode: 'INVALID_ENCRYPTION_TYPE',
-      message: 'Unsupported encryption type',
-    };
-  }
+    const handler = cryptoHandlers.get(
+        context.encryptionType ?? ''
+    );
 
-  return await handler.encrypt(context);
+    if (!handler) {
+        return {
+            category: 'SERVER',
+            statusCode: 400,
+            errorCode: 'INVALID_ENCRYPTION_TYPE',
+            message: 'Unsupported encryption type',
+        };
+    }
+
+    return await handler.encrypt(
+        context,
+        cryptoExecutionContext
+    );
 }
 
 // ===== Cryptographic Strategies =====
 
 const cryptoHandlers: Map<string, CryptoStrategy> = new Map([
-  [
-    'JWE',
-    {
-      decrypt: decryptJWE,
-      encrypt: encryptJWE,
-    },
-  ],
-
-  [
-    'AES_RSA',
-    {
-      decrypt: decryptAES_RSA,
-      encrypt: encryptAES_RSA,
-    },
-  ],
-  [
-    'JWS_AES_RSA',
-    {
-      decrypt: decryptJWS_AES_RSA,
-      encrypt: encryptJWS_AES_RSA,
-    },
-  ],
+    [
+        'JWE',
+        {
+            decrypt: decryptJWE,
+            encrypt: encryptJWE,
+        },
+    ],
+    [
+        'AES_RSA',
+        {
+            decrypt: decryptAES_RSA,
+            encrypt: encryptAES_RSA,
+        },
+    ],
+    [
+        'JWS_AES_RSA',
+        {
+            decrypt: decryptJWS_AES_RSA,
+            encrypt: encryptJWS_AES_RSA,
+        },
+    ],
 ]);
