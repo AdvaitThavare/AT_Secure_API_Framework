@@ -27,6 +27,24 @@ export async function decryptJWS_AES_RSA(
 
     const wrapper = context.encryptedWrapper;
 
+    // ===== Convert AES Parameters =====
+
+    const encryptedPayload = decodeBase64(
+        wrapper!.payload
+    );
+
+    const iv = decodeBase64(wrapper!.iv!);
+
+    // ===== Store Cryptographic Execution Context -1 =====
+
+    cryptoExecutionContext.aes = {
+        ivLength: iv.length,
+    };
+
+    cryptoExecutionContext.rsa = {
+        padding: constants.RSA_PKCS1_PADDING,
+    };
+
     // ===== RSA Decryption =====
 
     let decryptedKey: Buffer;
@@ -35,7 +53,7 @@ export async function decryptJWS_AES_RSA(
         decryptedKey = decryptRSA(
             serverPrivateKey,
             decodeBase64(wrapper!.key!),
-            constants.RSA_PKCS1_PADDING
+            cryptoExecutionContext.rsa.padding!
         );
     } catch {
         return {
@@ -46,11 +64,13 @@ export async function decryptJWS_AES_RSA(
         };
     }
 
+    // ===== Store Cryptographic Execution Context -2 =====
+
+    cryptoExecutionContext.aes.keyLength = decryptedKey.length * 8;
+
     // ===== AES-CBC Decryption =====
 
     let decryptedBuffer: ArrayBuffer;
-
-    const iv = decodeBase64(wrapper!.iv!);
 
     try {
         decryptedBuffer = await decryptAES_CBC(
@@ -135,15 +155,11 @@ export async function decryptJWS_AES_RSA(
             };
         }
 
-        // ===== Store Cryptographic Execution Context =====
+        // ===== Store Cryptographic Execution Context -3 =====
 
         cryptoExecutionContext.protocol = {
             alg: header.alg,
             typ: header.typ,
-        };
-
-        cryptoExecutionContext.rsa = {
-            padding: constants.RSA_PKCS1_PADDING,
         };
 
         cryptoExecutionContext.signature = {
@@ -159,7 +175,7 @@ export async function decryptJWS_AES_RSA(
             createPublicKey(clientPublicKey),
             stringToBytes(signingInput),
             decodeBase64Url(encodedSignature),
-            algorithmConfiguration.signatureAlgorithm
+            cryptoExecutionContext.signature.algorithm!
         );
 
     } catch {

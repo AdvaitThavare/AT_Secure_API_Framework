@@ -26,12 +26,7 @@ export async function encryptAES_RSA(
     context: RequestContext,
     cryptoExecutionContext: CryptoExecutionContext
 ): Promise<AppError | null> {
-    // ===== Generate AES Key =====
-
-    const aesKeyBytes = generateRandomBytes(
-        cryptoExecutionContext.aes?.keyLength! / 8
-    );
-
+    
     // ===== Convert Payload to JSON =====
 
     let plaintext: string;
@@ -47,13 +42,15 @@ export async function encryptAES_RSA(
         };
     }
 
+    // ===== Generate AES Key =====
+
+    const aesKeyBytes = generateRandomBytes(cryptoExecutionContext.aes!.keyLength! / 8);
+
+    const iv = generateRandomBytes(cryptoExecutionContext.aes!.ivLength!);
+
     // ===== AES-CBC Encryption =====
 
     let encryptedBuffer: ArrayBuffer;
-
-    const iv = generateRandomBytes(
-        cryptoExecutionContext.aes?.ivLength!
-    );
 
     try {
         encryptedBuffer = await encryptAES_CBC(

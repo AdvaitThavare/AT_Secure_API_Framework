@@ -40,11 +40,11 @@ export async function encryptJWE(
 
   // ===== Generate CEK =====
 
-  const cek = generateRandomBytes(32);
+  const cek = generateRandomBytes(cryptoExecutionContext.aes!.keyLength! / 8);
 
   // ===== Generate IV =====
 
-  const iv = generateRandomBytes(12);
+  const iv = generateRandomBytes(cryptoExecutionContext.aes!.ivLength!);
 
   // ===== Convert Payload to JSON =====
 

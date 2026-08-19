@@ -86,8 +86,9 @@ export async function encryptJWS_AES_RSA(
 
     // ===== Generate AES Key =====
 
-    const aesKeyBytes = generateRandomBytes(32);
-    const iv = generateRandomBytes(16);
+    const aesKeyBytes = generateRandomBytes(cryptoExecutionContext.aes!.keyLength! / 8);
+
+    const iv = generateRandomBytes(cryptoExecutionContext.aes!.ivLength!);
 
     // ===== AES-CBC Encryption =====
 

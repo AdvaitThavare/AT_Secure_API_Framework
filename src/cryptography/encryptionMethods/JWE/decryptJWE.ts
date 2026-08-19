@@ -49,6 +49,7 @@ export async function decryptJWE(
     let header: {
         alg?: string;
         enc?: string;
+        typ?: string;
     };
 
     try {
@@ -83,20 +84,17 @@ export async function decryptJWE(
         };
     }
 
-    // ===== Store Cryptographic Execution Context =====
+    // ===== Store Cryptographic Execution Context -1 =====
 
     cryptoExecutionContext.protocol = {
         alg: header.alg,
         enc: header.enc,
+        typ: header.typ,
     };
 
     cryptoExecutionContext.rsa = {
         padding: algorithmConfiguration.rsaPadding,
         oaepHash: algorithmConfiguration.rsaOaepHash,
-    };
-
-    cryptoExecutionContext.aes = {
-        tagLength: algorithmConfiguration.aesTagLength,
     };
 
     // ===== RSA Decryption =====
@@ -133,6 +131,16 @@ export async function decryptJWE(
     ]);
 
     const aad = stringToBytes(protectedHeader);
+
+
+    // ===== Store Cryptographic Execution Context -2 =====
+
+    cryptoExecutionContext.aes = {
+        keyLength: cek.length * 8,
+        ivLength: ivBytes.length,
+        tagLength: algorithmConfiguration.aesTagLength,
+    };
+
 
     // ===== AES-GCM Decryption =====
 
