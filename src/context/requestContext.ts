@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import type { PayloadState, DataEncryption } from '../constants/cryptographyConstants';
+import type { PayloadState, DataEncryption } from '../constants/payloadIdentifierConstants';
 
 export type EncryptedWrapper = {
   payload: string;
