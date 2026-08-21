@@ -13,7 +13,6 @@ import { encWrapperValidator } from './payloadFormatValidation/encWrapperValidat
 import { decryptPayload, encryptPayload } from './cryptography/cryptographyLayer';
 import { normalizeHeaders } from './context/headerUtils';
 
-
 const server = https.createServer(
   getTLSConfig(),
   (req, res) => {
@@ -25,26 +24,31 @@ const server = https.createServer(
 
     req.on('end', async () => {
       const rawBody = Buffer.concat(chunks).toString();
+
       const context: RequestContext = {
         req,
         res,
         requestRawBody: rawBody,
         requestHeaders: normalizeHeaders(req.headers),
         responseHeaders: {},
-        contentType: req.headers['content-type'] ?? '',
       };
+
       const methodError = methodRouter(context);
+
       if (methodError) {
         sendError(res, methodError);
         return;
       }
+
       const route = endpointRouter(context);
+
       if ('statusCode' in route) {
         sendError(res, route);
         return;
       }
 
       const payloadTypeError = payloadTypeIdentifier(context);
+
       if (payloadTypeError) {
         sendError(res, payloadTypeError);
         return;
@@ -53,8 +57,8 @@ const server = https.createServer(
       let cryptoExecutionContext;
 
       if (context.payloadType === 'ENCRYPTED') {
-
         const wrapperError = encWrapperValidator(context);
+
         if (wrapperError) {
           sendError(res, wrapperError);
           return;
@@ -66,30 +70,36 @@ const server = https.createServer(
           sendError(res, decryptResult.error);
           return;
         }
-        cryptoExecutionContext = decryptResult.cryptoExecutionContext;
 
+        cryptoExecutionContext =
+          decryptResult.cryptoExecutionContext;
       }
 
       const validationError = requestValidator(context);
+
       if (validationError) {
         sendError(res, validationError);
         return;
       }
-      const contentType = context.contentType ?? '';
 
-      context.serviceResponse = serviceDispatcher(route, context.payload);
+      context.serviceResponse =
+        serviceDispatcher(route, context.payload);
 
       if (context.payloadType === 'ENCRYPTED') {
         const encryptError = await encryptPayload(
           context,
           cryptoExecutionContext!
         );
+
         if (encryptError) {
           sendError(res, encryptError);
           return;
         }
       }
-      // console.log("Services are working FINE")
+
+      const contentType =
+        context.requestHeaders['content-type']?.[0] ?? '';
+
       sendResponse(
         res,
         contentType.includes('application/json')

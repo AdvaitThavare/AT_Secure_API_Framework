@@ -16,7 +16,6 @@ export interface RequestContext {
   responseHeaders: Record<string, string[]>;
   payload?: unknown;
   serviceResponse?: unknown;
-  contentType: string;
   payloadType?: PayloadState;
   encryptionType?: DataEncryption;
   encryptedWrapper?: EncryptedWrapper;

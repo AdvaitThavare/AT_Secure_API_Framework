@@ -5,10 +5,31 @@ export function requestValidator(
   context: RequestContext
 ): AppError | null {
 
-  if (context.payloadType === 'ENCRYPTED') {
-    return null;
+  const contentTypeValues = context.requestHeaders['content-type'];
+
+  // ===== Content-Type Header =====
+
+  if (!contentTypeValues?.length) {
+    return {
+      category: 'SERVER',
+      statusCode: 400,
+      errorCode: 'MISSING_CONTENT_TYPE',
+      message: 'Content-Type header is missing',
+    };
   }
-  const contentType = context.contentType ?? '';
+
+  if (contentTypeValues.length > 1) {
+    return {
+      category: 'SERVER',
+      statusCode: 400,
+      errorCode: 'MULTIPLE_CONTENT_TYPE_VALUES',
+      message: 'Multiple values for the same header are not allowed',
+    };
+  }
+
+  const contentType = contentTypeValues[0];
+
+  // ===== Validate Content-Type and Request Payload =====
 
   if (contentType.includes('application/json')) {
     try {
