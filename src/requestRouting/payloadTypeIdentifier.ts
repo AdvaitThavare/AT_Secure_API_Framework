@@ -5,7 +5,7 @@ import { HEADER_PAYLOAD_STATE, HEADER_DATA_ENCRYPTION, HEADER_ENC_WRAPPER_CONTEN
 
 type ValidCombination = {
   dataEncryption: DataEncryption;
-  wrapperContentType: string;
+  wrapperContentType: EncWrapperContentType;
 };
 
 const VALID_COMBINATIONS: Map<

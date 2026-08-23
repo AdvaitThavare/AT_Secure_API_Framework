@@ -493,148 +493,75 @@ Key principles:
 
 ## 18. Architectural Decisions (to be incorporated properly in the architecture.md file later)
 
-a. Dynamic IV — AES_RSA and JWS_AES_RSA
-AES_RSA and JWS_AES_RSA will use a fresh 16-byte cryptographically random IV for every AES-CBC encryption operation. The IV will be transported as a standard Base64-encoded value in the existing JSON encrypted-payload wrapper. Since 16 bytes always produce exactly 24 characters in standard Base64, the wrapper validator will first perform a lightweight 24-character length check, followed by Base64 validation and decoded-length verification to ensure the resulting IV is exactly 16 bytes. During decryption, the IV will be Base64-decoded before being supplied to AES-CBC. The IV is transportable alongside the encrypted payload and does not require encryption itself.
+0. Server Request Preparation Refactor
+├── move request body collection out of server.ts
+├── move RequestContext construction out of server.ts
+├── move request header normalization into request preparation
+├── keep server.ts responsible for HTTPS/bootstrap + pipeline orchestration
+└── remove protocol-specific response-header construction from server.ts
 
-b. JWS Algorithm/Type Validation: JWS validation will use an explicit allowlist of supported alg + typ combinations. RS256 + JWT is currently the only allowed combination, while the design permits additional explicitly supported combinations to be added later. alg is mandatory for all supported combinations, while typ is conditionally mandatory based on the requirements of the allowlisted combination. The allowlist is initially maintained within the decryption strategy, with the option to extract it into a dedicated JWS-specific module if the validation rules grow or require reuse.
+1. Request parsing map
+   ├── parseJSON
+   ├── parseText
+   └── requestValidator → parser map
 
-c. JWS Algorithm/Type Validation: The JWS_AES_RSA decryption strategy will validate incoming JWS tokens against an explicit allowlist of supported alg + typ combinations. The current allowed combination is RS256 + JWT. The allowlist is initially maintained within the decryption strategy, with the option to extract it into a dedicated JWS-specific .ts module under the JWS_AES_RSA folder if the validation rules grow or require reuse.
+2. CryptoExecutionContext validation
+   ├── validate required AES configuration
+   ├── validate required RSA configuration
+   ├── validate protocol configuration
+   └── validate strategy-specific requirements
 
-d. JWS Error Handling: JWS validation and cryptographic failures will maintain distinct internal error conditions for diagnostics and troubleshooting. External responses will expose specific errors for harmless request-format or validation failures where appropriate, while security-sensitive failures will be mapped to generic external errors when revealing the specific failure could disclose sensitive information or assist request manipulation.
+3. Cryptographic utility hardening
+   ├── explicit algorithm allowlists
+   ├── required key/IV parameter validation
+   └── utility-level technical error boundaries
 
-e. JWS Validation and Payload Handling: The JWS_AES_RSA decryption flow will parse and validate the JWS protected header, validate the allowlisted alg + typ combination, and verify the JWS signature before treating the payload as trusted data. Payload decoding remains within the JWS strategy; shared encoding/decoding primitives may be extracted later where genuinely reusable.
+4. Cryptography strategy cleanup
+   ├── JWE
+   ├── AES_RSA
+   └── JWS_AES_RSA
 
-f. Shared Cryptographic Utilities: Common low-level cryptographic operations will be centralized into reusable utilities. AES will support mapped AES-CBC and AES-GCM encryption/decryption, while RSA will support mapped encryption/decryption and signing/verification. Common utilities will handle genuinely shared operations such as encoding/decoding, byte/string/ArrayBuffer conversions, random-byte generation, IV generation, and AES-key generation. Protocol-specific composition will remain within the respective cryptography strategies. Paired operations will remain grouped unless future complexity justifies separating them.
+5. JWS hardening
+   ├── alg/typ edge cases
+   ├── validation ordering
+   ├── malformed-token handling
+   └── security-sensitive error mapping
 
-g. Cryptographic Utility Algorithm Handling: Each cryptographic utility will maintain an explicit allowlist of supported algorithms/operations and enforce their algorithm-specific requirements. Protocol strategies will select the required cryptographic operation, while common crypto utilities will provide generic primitives such as secure random-byte generation. Algorithm-specific utilities will determine required key/IV sizes and request the necessary byte lengths from the common utilities.
+6. Key/certificate abstraction review
+   └── verify storage/protocol/TLS separation
 
-h. Common Cryptographic Utility: The common utility will provide genuinely reusable low-level primitives, initially including secure random-byte generation (generateRandomBytes(length)), Base64/Base64URL encoding and decoding, and byte/string/ArrayBuffer conversions. Algorithm- and protocol-specific logic will remain outside this utility. Additional generic primitives may be added later if required by the implementation.
+7. Automated regression testing
+   ├── plain flows
+   ├── encrypted flows
+   ├── headers
+   ├── validation
+   ├── error paths
+   └── IV behavior
 
-i. Cryptographic Utility Error Handling: Cryptographic utilities will detect and propagate technical failures without creating protocol-specific AppErrors or error messages. The respective strategy will interpret the failure and explicitly create the appropriate application-level error, allowing utilities to remain reusable and independent of protocol-specific error handling.
+8. Deferred plaintext encrypted-request tests
+   └── once a suitable client/test mechanism exists
 
-j. Key and Certificate Handling: Certificate/key storage and resolution will remain separate from TLS configuration and cryptography strategies. A reusable key-management layer will initially resolve certificate/key material from the repository's certs storage, while remaining replaceable by future storage mechanisms without requiring changes to individual cryptography strategies. The layer will remain storage- and protocol-agnostic, allowing the same underlying key-management approach to support TLS and application-level cryptography independently.
+9. Final code cleanup
 
-k. Cryptographic API Standardization: The new cryptographic utility layer will standardize on the Web Crypto API for supported cryptographic operations, rather than maintaining separate Node crypto and Web Crypto implementations. Canonical Web Crypto/standard cryptographic terminology will be used in code and algorithm allowlists; commonly encountered alternate/provider-specific names may be documented alongside them for reference. Protocol strategies will remain independent of the underlying cryptographic API.
-
-l. Cryptography Strategy Cleanup: Refactor JWE, AES_RSA, and JWS_AES_RSA strategies to delegate low-level cryptographic operations to the shared utilities while retaining protocol-specific validation, composition, orchestration, and response/error interpretation within the respective strategies. Exact responsibilities will be finalized during implementation based on the current code.
-
-m. Encrypted Wrapper Validation and Normalization: encWrapperValidator.ts will remain responsible for validating the external encrypted-wrapper structure and normalizing it into the explicit internal EncryptedWrapper representation. It will contain only generic, algorithm-independent validation; encryption/protocol-specific validation, such as IV length requirements, will remain with the applicable cryptographic strategy or utility. A separate normalization layer will not be introduced unless normalization complexity later justifies it.
-
-n. Payload State and Data Encryption Handling: payloadTypeIdentifier.ts will remain the centralized layer for identifying and validating the allowed Payload State ↔ Data Encryption combinations using an explicit allowlist, with VALID_COMBINATIONS as the source of truth. The request headers will be renamed from x-payload-type to X-Payload-State and from x-encryption-type to X-Data-Encryption. Redundant standalone validation Sets will not be maintained where the allowlist already provides the required validation. Header capture/storage mechanics remain part of the separate centralized header-handling discussion.
-
-o. Centralized Header Handling: RequestContext will maintain separate normalized collections for request and response headers using Record<string, string[]>. Header names will be normalized to lowercase, while single and multiple values will consistently be represented as arrays without losing information. Layers will perform explicit header lookups and extract only the headers they require; interpreted values such as PayloadState and DataEncryption may remain as typed context properties.
-
-p. Response Architecture: Keep response construction protocol-specific within the respective cryptography strategies, while maintaining the application response payload and response headers as separate RequestContext data. Common HTTP response handling will remain responsible only for delivering the finalized status, headers, and payload, without introducing protocol-specific response abstractions or unnecessary additional layers.
-
-q. Unified Plain-Payload Parsing: Cryptographic strategies will be responsible for decrypting/decoding the payload but will not perform application-level parsing. The decrypted application payload will be placed in context.requestRawBody, after which requestValidator.ts will perform the common content-type-based parsing and validation used by both plain and encrypted requests. A dedicated header will identify the decrypted payload's content type for encrypted requests, with the final header name to be decided during implementation. The corresponding response terminology will use context.responseRawBody for consistency.
-
-Roadmap:
-0. Baseline / repository review
-        ↓
-1. RequestContext foundation
-   - request headers
-   - response headers
-   - requestRawBody
-   - responseRawBody
-        ↓
-2. Centralized Header Handling
-   - normalize Node headers → Record<string, string[]>
-   - explicit header lookup
-   - update header consumers
-        ↓
-3. Payload State / Data Encryption refactor
-   - rename headers
-   - remove redundant Sets
-   - update VALID_COMBINATIONS usage
-        ↓
-4. Encrypted Wrapper Validation
-   - structural validation
-   - wrapper normalization
-   - generic IV/Base64 structural checks
-        ↓
-5. Key & Certificate Management
-   - extract key/certificate loading
-   - decouple strategies and TLS from storage
-        ↓
-6. Common Crypto Utility
-   - Web Crypto standardization
-   - random bytes
-   - encoding/decoding
-   - conversions
-        ↓
-7. AES Utility
-   - AES-CBC
-   - AES-GCM
-   - algorithm allowlist
-   - key/IV requirements
-        ↓
-8. RSA Utility
-   - RSA encryption/decryption
-   - RSA signing/verification
-   - algorithm allowlist
-        ↓
-9. JWE Strategy Refactor
-        ↓
-10. AES_RSA Strategy Refactor
-   - dynamic IV
-        ↓
-11. JWS_AES_RSA Strategy Refactor
-   - alg + typ allowlist
-   - JWS validation
-   - signature verification
-        ↓
-12. Unified requestRawBody + requestValidator Flow
-   - encrypted/plain convergence
-   - decrypted content-type handling
-   - move application parsing out of strategies
-        ↓
-13. Response Architecture
-   - responseRawBody
-   - response headers
-   - common HTTP response delivery
-        ↓
-14. Final Cleanup
-   - imports
-   - obsolete code
-   - naming
-   - dead/redundant logic
-        ↓
-15. Regression Testing
-   - existing plain flows
-   - existing encrypted flows
-   - new IV behavior
-   - headers
-   - validation/error paths
-        ↓
-16. Consolidated architecture.md Update
+10. Final ARCHITECTURE.md consolidation
 
 
-Next phase:
-1. Internal CryptoExecutionContext validation
 
-Purpose:
-
-Verify that every strategy has populated all parameters required for encryption/decryption before proceeding.
-
-Note- Remember, we are fine with code not compiling during the process of this implementation. So we can do all the required changes layer by layer, without worrying about compilation.
-
-API vs Framework Error Boundary
-
+API vs Framework Error Boundary-
 The framework and individual API services maintain separate error responsibilities. Framework errors represent failures in request processing, cryptographic operations, wrapper/header validation, or other infrastructure-level processing and are represented internally as AppError and handled by sendError(). API-level errors, including API input validation, functional failures, and business-rule failures, are constructed by the individual API service as part of its ServiceResponse payload. The API response contract may evolve independently for each service, including additional responseStatus fields, without requiring changes to the framework's error-handling architecture.
 
-Response Serialization
-
-API services return a representation-neutral ServiceResponse containing the response payload, status code, and response headers. Content-Type-specific serialization is intentionally kept outside the API service and HTTP response handler. A dedicated response serialization layer will later convert the service payload into its wire representation based on the declared media type. This layer will be extensible through media-type-specific serializers and will not require changes to API services, service dispatching, cryptography, or framework error handling.
-
-Response Serialization — Architectural Decision
-
+Response Serialization — Architectural Decision-
 A dedicated response serialization layer will sit between the API service and HTTP response handling. API services will continue to return a representation-neutral ServiceResponse containing statusCode, responseHeaders, and payload. The serialization layer will convert the payload into its wire representation based on the declared Content-Type. Initially, it will use simple JSON/text handling only; this is intentionally a temporary implementation. Future media types such as XML can be added within the serialization layer without requiring changes to API services, serviceDispatcher, cryptography, or responseHandler.
 
-For responseHandler.ts
-However, there is one thing I'd change from this proposal before you implement it:
-
+For responseHandler.ts- (Suggestion for future only)
 We don't actually need ServiceResponse as an argument anymore if we pass the HTTP metadata separately. But I don't recommend doing that yet, because it would duplicate fields unnecessarily.
 
-Content-Type always represents the actual API payload, not the encrypted transport wrapper. For encrypted requests/responses, x-enc-wrapper-content-type represents the encrypted wrapper's media type and is currently always application/json. The API service is authoritative for the actual response Content-Type; downstream serialization and encryption layers must preserve it. Encryption must not replace the API payload's Content-Type with application/json.
 
-Deferred encryption test coverage: Plain-text request scenarios for AES_RSA and JWS_AES_RSA are currently deferred because the existing Postman setup cannot generate the required plaintext encrypted request. JSON-based encrypted flows and JSON payloads delivered as text/plain have been validated successfully. Plain-text encryption is expected to follow the same response serialization → encryption pipeline and will be tested when a suitable client/test setup is available.
+Deferred encryption test coverage-
+Plain-text request scenarios for AES_RSA and JWS_AES_RSA are currently deferred because the existing Postman setup cannot generate the required plaintext encrypted request. JSON-based encrypted flows and JSON payloads delivered as text/plain have been validated successfully. Plain-text encryption is expected to follow the same response serialization → encryption pipeline and will be tested when a suitable client/test setup is available.
+
+Future development guideline (to be documented in architecture md after cleanup)
+    When introducing a new framework header, first decide whether downstream code needs the raw header or an interpreted value. If it needs semantic information, derive it once at the appropriate interpretation/validation layer and expose that semantic value through RequestContext.
+    Strict Rule to be established
+    Raw HTTP headers are accessed through context.requestHeaders / context.responseHeaders. Derived semantic values are stored in RequestContext and consumed by downstream layers. No downstream layer should reinterpret framework headers when a semantic value already exists.
+

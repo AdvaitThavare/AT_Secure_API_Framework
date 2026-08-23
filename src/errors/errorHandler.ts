@@ -1,9 +1,6 @@
 import type { ServerResponse } from 'node:http';
 
-export type ErrorCategory =
-  | 'SERVER'
-  | 'ENCRYPTION'
-  | 'API';
+export type ErrorCategory = 'SERVER';
 
 export type AppError = {
   category: ErrorCategory;

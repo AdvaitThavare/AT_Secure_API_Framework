@@ -1,5 +1,7 @@
 import type { RequestContext } from '../context/requestContext';
 import type { AppError } from '../errors/errorHandler';
+import { normalizeMediaType } from './requestParsing/mediaTypeUtils';
+import { requestParserMap } from './requestParsing/requestParsers';
 
 export function requestValidator(
   context: RequestContext
@@ -27,34 +29,33 @@ export function requestValidator(
     };
   }
 
-  const contentType = contentTypeValues[0];
+  const contentType = normalizeMediaType(contentTypeValues[0]);
 
-  // ===== Validate Content-Type and Request Payload =====
+  // ===== Request Parsing =====
 
-  if (contentType.includes('application/json')) {
-    try {
-      context.payload = JSON.parse(context.requestRawBody);
-    } catch {
-      return {
-        category: 'SERVER',
-        statusCode: 400,
-        errorCode: 'INVALID_JSON',
-        message: 'Invalid JSON payload',
-      };
-    }
+  const parser = requestParserMap.get(contentType);
 
-    return null;
+  if (!parser) {
+    return {
+      category: 'SERVER',
+      statusCode: 415,
+      errorCode: 'UNSUPPORTED_CONTENT_TYPE',
+      message: 'Unsupported Content-Type',
+    };
   }
 
-  if (contentType.includes('text/plain')) {
-    context.payload = context.requestRawBody;
-    return null;
+  const parseResult = parser(context.requestRawBody);
+
+  if (!parseResult.success) {
+    return {
+      category: 'SERVER',
+      statusCode: 400,
+      errorCode: 'INVALID_REQUEST_PAYLOAD',
+      message: 'Invalid request payload or incompatible content type',
+    };
   }
 
-  return {
-    category: 'SERVER',
-    statusCode: 415,
-    errorCode: 'UNSUPPORTED_CONTENT_TYPE',
-    message: 'Unsupported Content-Type',
-  };
+  context.payload = parseResult.payload;
+
+  return null;
 }
