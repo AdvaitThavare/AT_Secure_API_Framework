@@ -7,7 +7,6 @@
  */
 
 import type { RequestContext } from '../../../context/requestContext';
-import type { AppError } from '../../../errors/errorHandler';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
 import { encodeBase64Url, generateRandomBytes, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
 import { encryptAES_GCM } from '../../cryptoAlgorithms/AES_Utility/AES_GCM';

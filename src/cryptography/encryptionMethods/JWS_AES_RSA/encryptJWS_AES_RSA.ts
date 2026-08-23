@@ -8,7 +8,6 @@
  */
 
 import type { RequestContext } from '../../../context/requestContext';
-import type { AppError } from '../../../errors/errorHandler';
 import { getCryptoFunctionKeys } from '../../../serverManagement/cryptoFunctionKeys';
 import { createPrivateKey, } from 'node:crypto';
 import { encodeBase64, encodeBase64Url, generateRandomBytes, stringToBytes } from '../../commonCrypto/commonCryptoUtilities';
@@ -16,6 +15,7 @@ import { encryptAES_CBC } from '../../cryptoAlgorithms/AES_Utility/AES_CBC';
 import { signRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Signature';
 import { encryptRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Crypto';
 import type { CryptoExecutionContext } from '../../CryptoExecutionContext';
+import type { EncryptPayloadResult } from '../../cryptographyLayer';
 
 const { serverPrivateKey, clientPublicKey } = getCryptoFunctionKeys();
 
@@ -27,23 +27,9 @@ export type JWSAESRSAResponse = {
 
 export async function encryptJWS_AES_RSA(
     context: RequestContext,
-    cryptoExecutionContext: CryptoExecutionContext
-): Promise<AppError | null> {
-
-    // ===== Convert Payload to JSON =====
-
-    let plaintext: string;
-
-    try {
-        plaintext = JSON.stringify(context.serviceResponse);
-    } catch {
-        return {
-            category: 'SERVER',
-            statusCode: 500,
-            errorCode: 'INVALID_RESPONSE_PAYLOAD',
-            message: 'Response payload could not be serialized to JSON',
-        };
-    }
+    cryptoExecutionContext: CryptoExecutionContext,
+    responseBody: string
+): Promise<EncryptPayloadResult> {
 
     // ===== Generate JWS =====
 
@@ -60,7 +46,7 @@ export async function encryptJWS_AES_RSA(
         );
 
         const payload = encodeBase64Url(
-            stringToBytes(plaintext)
+            stringToBytes(responseBody)
         );
 
         const signingInput =
@@ -77,10 +63,13 @@ export async function encryptJWS_AES_RSA(
 
     } catch {
         return {
-            category: 'SERVER',
-            statusCode: 500,
-            errorCode: 'JWS_AES_RSA_SIGNING_FAILED',
-            message: 'Failed to sign response payload',
+            error: {
+                category: 'SERVER',
+                statusCode: 500,
+                errorCode: 'JWS_AES_RSA_SIGNING_FAILED',
+                message: 'Failed to sign response payload',
+            },
+            responseBody: '',
         };
     }
 
@@ -102,10 +91,13 @@ export async function encryptJWS_AES_RSA(
         );
     } catch {
         return {
-            category: 'SERVER',
-            statusCode: 500,
-            errorCode: 'JWS_AES_RSA_ENCRYPTION_FAILED',
-            message: 'Failed to encrypt response payload',
+            error: {
+                category: 'SERVER',
+                statusCode: 500,
+                errorCode: 'JWS_AES_RSA_ENCRYPTION_FAILED',
+                message: 'Failed to encrypt response payload',
+            },
+            responseBody: '',
         };
     }
 
@@ -121,22 +113,24 @@ export async function encryptJWS_AES_RSA(
         );
     } catch {
         return {
-            category: 'SERVER',
-            statusCode: 500,
-            errorCode: 'JWS_AES_RSA_KEY_ENCRYPTION_FAILED',
-            message: 'Failed to encrypt content encryption key',
+            error: {
+                category: 'SERVER',
+                statusCode: 500,
+                errorCode: 'JWS_AES_RSA_KEY_ENCRYPTION_FAILED',
+                message: 'Failed to encrypt content encryption key',
+            },
+            responseBody: '',
         };
     }
 
     // ===== Final Output =====
 
-    context.serviceResponse = {
-        encResPayload: encodeBase64(
-            new Uint8Array(encryptedBuffer)
-        ),
-        encResKey: encodeBase64(encryptedKey),
-        iv: encodeBase64(iv),
-    } satisfies JWSAESRSAResponse;
-
-    return null;
+    return {
+        error: null,
+        responseBody: JSON.stringify({
+            encResPayload: encodeBase64(new Uint8Array(encryptedBuffer)),
+            encResKey: encodeBase64(encryptedKey),
+            iv: encodeBase64(iv),
+        } satisfies JWSAESRSAResponse),
+    };
 }
