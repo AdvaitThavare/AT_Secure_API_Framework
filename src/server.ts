@@ -2,7 +2,6 @@ import https from 'node:https';
 import { serverConfig } from './serverManagement/serverConfig';
 import { getTLSConfig } from './serverManagement/tlsConfig';
 import { sendError } from './errors/errorHandler';
-import { responseConfig, sendResponse } from './successResponse/successHandler';
 import { requestValidator } from './payloadFormatValidation/requestValidator';
 import { methodRouter } from './requestRouting/methodRouter';
 import { endpointRouter } from './requestRouting/endpointRouter';
@@ -12,6 +11,10 @@ import { payloadTypeIdentifier } from './requestRouting/payloadTypeIdentifier';
 import { encWrapperValidator } from './payloadFormatValidation/encWrapperValidator';
 import { decryptPayload, encryptPayload } from './cryptography/cryptographyLayer';
 import { normalizeHeaders } from './context/headerUtils';
+import { sendResponse } from './responseHandler/responseHandler';
+import { responseSerializer } from './responseHandler/responseSerialization/responseSerializer';
+import { HEADER_ENC_WRAPPER_CONTENT_TYPE } from './constants/headerConstants';
+
 
 const server = https.createServer(
   getTLSConfig(),
@@ -82,30 +85,39 @@ const server = https.createServer(
         return;
       }
 
-      context.serviceResponse =
-        serviceDispatcher(route, context.payload);
-
-      if (context.payloadType === 'ENCRYPTED') {
-        const encryptError = await encryptPayload(
-          context,
-          cryptoExecutionContext!
-        );
-
-        if (encryptError) {
-          sendError(res, encryptError);
-          return;
-        }
-      }
-
       const contentType =
         context.requestHeaders['content-type']?.[0] ?? '';
 
+      const serviceResponse =
+        serviceDispatcher(
+          route,
+          context.payload,
+          contentType
+        );
+
+      let responseBody =
+        responseSerializer(serviceResponse);
+
+      if (context.payloadType === 'ENCRYPTED') {
+        const encryptResult = await encryptPayload(
+          context,
+          cryptoExecutionContext!,
+          responseBody
+        );
+
+        if (encryptResult.error) {
+          sendError(res, encryptResult.error);
+          return;
+        }
+
+        responseBody = encryptResult.responseBody;
+        serviceResponse.responseHeaders[HEADER_ENC_WRAPPER_CONTENT_TYPE] = ['application/json'];
+      }
+
       sendResponse(
         res,
-        contentType.includes('application/json')
-          ? responseConfig.JSON
-          : responseConfig.TEXT,
-        JSON.stringify(context.serviceResponse)
+        serviceResponse,
+        responseBody
       );
     });
   }

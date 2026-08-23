@@ -84,22 +84,22 @@ export async function decryptAES_RSA(
         };
     }
 
-    // ===== Convert Decrypted Payload to JSON =====
+    // ===== Convert Decrypted Payload =====
 
     try {
-        const decryptedString = bytesToString(
-            decryptedBuffer
-        );
-        // console.log(decryptedString)
-        context.payload = JSON.parse(decryptedString);
+        context.requestRawBody =
+            bytesToString(
+                decryptedBuffer
+            );
 
         return null;
+
     } catch {
         return {
             category: 'SERVER',
             statusCode: 400,
             errorCode: 'INVALID_DECRYPTED_PAYLOAD',
-            message: 'Decrypted payload is not valid JSON',
+            message: 'Decrypted payload is invalid',
         };
     }
 }

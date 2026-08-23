@@ -199,13 +199,10 @@ export async function decryptJWS_AES_RSA(
     // ===== Extract JWS Payload =====
 
     try {
-        const decryptedString =
+        context.requestRawBody =
             bytesToString(
                 decodeBase64Url(encodedPayload)
             );
-
-        context.payload =
-            JSON.parse(decryptedString);
 
         return null;
 
@@ -214,7 +211,7 @@ export async function decryptJWS_AES_RSA(
             category: 'SERVER',
             statusCode: 400,
             errorCode: 'INVALID_DECRYPTED_PAYLOAD',
-            message: 'Decrypted payload is not valid JSON',
+            message: 'Decrypted payload is invalid',
         };
     }
 }

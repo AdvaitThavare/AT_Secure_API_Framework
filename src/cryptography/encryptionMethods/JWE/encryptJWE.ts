@@ -13,6 +13,7 @@ import { encodeBase64Url, generateRandomBytes, stringToBytes } from '../../commo
 import { encryptAES_GCM } from '../../cryptoAlgorithms/AES_Utility/AES_GCM';
 import { encryptRSA } from '../../cryptoAlgorithms/RSA_Utility/RSA_Crypto';
 import type { CryptoExecutionContext } from '../../CryptoExecutionContext';
+import type { EncryptPayloadResult } from '../../cryptographyLayer';
 
 
 const { clientPublicKey } = getCryptoFunctionKeys();
@@ -23,8 +24,9 @@ export type JWEResponse = {
 
 export async function encryptJWE(
   context: RequestContext,
-  cryptoExecutionContext: CryptoExecutionContext
-): Promise<AppError | null> {
+  cryptoExecutionContext: CryptoExecutionContext,
+  responseBody: string
+): Promise<EncryptPayloadResult> {
 
   // ===== Protected Header =====
 
@@ -46,21 +48,6 @@ export async function encryptJWE(
 
   const iv = generateRandomBytes(cryptoExecutionContext.aes!.ivLength!);
 
-  // ===== Convert Payload to JSON =====
-
-  let plaintext: string;
-
-  try {
-    plaintext = JSON.stringify(context.serviceResponse);
-  } catch {
-    return {
-      category: 'SERVER',
-      statusCode: 500,
-      errorCode: 'INVALID_RESPONSE_PAYLOAD',
-      message: 'Response payload could not be serialized to JSON',
-    };
-  }
-
   // ===== AES-GCM Encryption =====
 
   let encryptedBuffer: ArrayBuffer;
@@ -69,16 +56,19 @@ export async function encryptJWE(
     encryptedBuffer = await encryptAES_GCM(
       cek,
       iv,
-      stringToBytes(plaintext),
+      stringToBytes(responseBody),
       stringToBytes(protectedHeader),
       cryptoExecutionContext.aes!.tagLength!
     );
   } catch {
     return {
-      category: 'SERVER',
-      statusCode: 500,
-      errorCode: 'JWE_ENCRYPTION_FAILED',
-      message: 'Failed to encrypt response payload',
+      error: {
+        category: 'SERVER',
+        statusCode: 500,
+        errorCode: 'JWE_ENCRYPTION_FAILED',
+        message: 'Failed to encrypt response payload',
+      },
+      responseBody: '',
     };
   }
 
@@ -111,10 +101,13 @@ export async function encryptJWE(
     );
   } catch {
     return {
-      category: 'SERVER',
-      statusCode: 500,
-      errorCode: 'JWE_KEY_ENCRYPTION_FAILED',
-      message: 'Failed to encrypt content encryption key',
+      error: {
+        category: 'SERVER',
+        statusCode: 500,
+        errorCode: 'JWE_KEY_ENCRYPTION_FAILED',
+        message: 'Failed to encrypt content encryption key',
+      },
+      responseBody: '',
     };
   }
 
@@ -130,9 +123,10 @@ export async function encryptJWE(
 
   // ===== Final Output =====
 
-  context.serviceResponse = {
-    encResPayload: compactJWE,
-  } satisfies JWEResponse;
-
-  return null;
+  return {
+    error: null,
+    responseBody: JSON.stringify({
+      encResPayload: compactJWE,
+    } satisfies JWEResponse),
+  };
 }

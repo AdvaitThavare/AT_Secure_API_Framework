@@ -1,9 +1,11 @@
 import { echoService } from '../servicesAPI/miscellaneous/echoService';
 import type { Route } from '../requestRouting/endpointRouter';
+import type { ServiceResponse } from './serviceResponse';
 
 type ServiceHandler = (
-  payload: unknown
-) => unknown;
+  payload: unknown,
+  contentType: string
+) => ServiceResponse;
 
 const services = new Map<string, ServiceHandler>([
   ['echoService', echoService],
@@ -11,7 +13,9 @@ const services = new Map<string, ServiceHandler>([
 
 export function serviceDispatcher(
   route: Route,
-  payload: unknown
-): unknown {
-  return services.get(route.service)!(payload);
+  payload: unknown,
+  contentType: string
+): ServiceResponse {
+
+  return services.get(route.service)!(payload, contentType);
 }

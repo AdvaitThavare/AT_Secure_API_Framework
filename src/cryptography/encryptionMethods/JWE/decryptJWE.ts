@@ -166,14 +166,10 @@ export async function decryptJWE(
     // ===== Final Output =====
 
     try {
-        const decryptedString =
+        context.requestRawBody =
             bytesToString(
                 decryptedBuffer
             );
-
-        context.payload = JSON.parse(
-            decryptedString
-        );
 
         return null;
 
@@ -182,7 +178,7 @@ export async function decryptJWE(
             category: 'SERVER',
             statusCode: 400,
             errorCode: 'INVALID_DECRYPTED_PAYLOAD',
-            message: 'Decrypted payload is not valid JSON',
+            message: 'Decrypted payload is invalid',
         };
     }
 }

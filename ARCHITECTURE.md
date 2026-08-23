@@ -607,3 +607,32 @@ Roadmap:
    - validation/error paths
         ↓
 16. Consolidated architecture.md Update
+
+
+Next phase:
+1. Internal CryptoExecutionContext validation
+
+Purpose:
+
+Verify that every strategy has populated all parameters required for encryption/decryption before proceeding.
+
+Note- Remember, we are fine with code not compiling during the process of this implementation. So we can do all the required changes layer by layer, without worrying about compilation.
+
+API vs Framework Error Boundary
+
+The framework and individual API services maintain separate error responsibilities. Framework errors represent failures in request processing, cryptographic operations, wrapper/header validation, or other infrastructure-level processing and are represented internally as AppError and handled by sendError(). API-level errors, including API input validation, functional failures, and business-rule failures, are constructed by the individual API service as part of its ServiceResponse payload. The API response contract may evolve independently for each service, including additional responseStatus fields, without requiring changes to the framework's error-handling architecture.
+
+Response Serialization
+
+API services return a representation-neutral ServiceResponse containing the response payload, status code, and response headers. Content-Type-specific serialization is intentionally kept outside the API service and HTTP response handler. A dedicated response serialization layer will later convert the service payload into its wire representation based on the declared media type. This layer will be extensible through media-type-specific serializers and will not require changes to API services, service dispatching, cryptography, or framework error handling.
+
+Response Serialization — Architectural Decision
+
+A dedicated response serialization layer will sit between the API service and HTTP response handling. API services will continue to return a representation-neutral ServiceResponse containing statusCode, responseHeaders, and payload. The serialization layer will convert the payload into its wire representation based on the declared Content-Type. Initially, it will use simple JSON/text handling only; this is intentionally a temporary implementation. Future media types such as XML can be added within the serialization layer without requiring changes to API services, serviceDispatcher, cryptography, or responseHandler.
+
+For responseHandler.ts
+However, there is one thing I'd change from this proposal before you implement it:
+
+We don't actually need ServiceResponse as an argument anymore if we pass the HTTP metadata separately. But I don't recommend doing that yet, because it would duplicate fields unnecessarily.
+
+Content-Type always represents the actual API payload, not the encrypted transport wrapper. For encrypted requests/responses, x-enc-wrapper-content-type represents the encrypted wrapper's media type and is currently always application/json. The API service is authoritative for the actual response Content-Type; downstream serialization and encryption layers must preserve it. Encryption must not replace the API payload's Content-Type with application/json.
