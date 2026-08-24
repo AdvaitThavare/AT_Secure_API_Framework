@@ -2,10 +2,10 @@ import type { ServiceResponse } from '../../serviceManagement/serviceResponse';
 
 export function echoService(
   payload: unknown,
-  contentType: string
+  requestMediaType: string
 ): ServiceResponse {
 
-  if (contentType.includes('application/json')) {
+  if (requestMediaType === 'application/json') {
     return {
       statusCode: 200,
       payload: {

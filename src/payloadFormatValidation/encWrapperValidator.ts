@@ -6,17 +6,17 @@ const WRAPPER_REQUIREMENTS = {
     JWE: {
         payload: 'required',
         key: 'forbidden',
-        iv: 'forbidden',
+        base64iv: 'forbidden',
     },
     AES_RSA: {
         payload: 'required',
         key: 'required',
-        iv: 'required',
+        base64iv: 'required',
     },
     JWS_AES_RSA: {
         payload: 'required',
         key: 'required',
-        iv: 'required',
+        base64iv: 'required',
     },
 } as const;
 
@@ -42,7 +42,7 @@ export function encWrapperValidator(
     let wrapper: {
         encReqPayload?: unknown;
         encReqKey?: unknown;
-        iv?: unknown;
+        base64iv?: unknown;
     };
 
     try {
@@ -139,34 +139,34 @@ export function encWrapperValidator(
 
     // ===== IV =====
 
-    if (requirements.iv === 'forbidden') {
+    if (requirements.base64iv === 'forbidden') {
 
-        if (wrapper.iv !== undefined) {
+        if (wrapper.base64iv !== undefined) {
             return {
                 category: 'SERVER',
                 statusCode: 400,
                 errorCode: 'INVALID_IV',
-                message: 'iv is not allowed',
+                message: 'base64iv value is not allowed',
             };
         }
 
-    } else if (requirements.iv === 'required') {
+    } else if (requirements.base64iv === 'required') {
 
         if (
-            typeof wrapper.iv !== 'string' ||
-            !wrapper.iv
+            typeof wrapper.base64iv !== 'string' ||
+            !wrapper.base64iv
         ) {
             return {
                 category: 'SERVER',
                 statusCode: 400,
                 errorCode: 'MISSING_IV',
-                message: 'iv is missing',
+                message: 'base64iv is missing',
             };
         }
 
         // ===== IV Base64 Validation =====
 
-        if (!ALLOWED_IV_BASE64_LENGTHS.has(wrapper.iv.length)) {
+        if (!ALLOWED_IV_BASE64_LENGTHS.has(wrapper.base64iv.length)) {
             return {
                 category: 'SERVER',
                 statusCode: 400,
@@ -175,7 +175,7 @@ export function encWrapperValidator(
             };
         }
 
-        if (!isValidBase64(wrapper.iv)) {
+        if (!isValidBase64(wrapper.base64iv)) {
             return {
                 category: 'SERVER',
                 statusCode: 400,
@@ -186,7 +186,7 @@ export function encWrapperValidator(
 
         // ===== IV Decoded Length =====
 
-        const decodedIv = decodeBase64(wrapper.iv);
+        const decodedIv = decodeBase64(wrapper.base64iv);
             
         if (
             decodedIv.length !== 12 &&
@@ -208,8 +208,8 @@ export function encWrapperValidator(
         ...(wrapper.encReqKey !== undefined
             ? { key: wrapper.encReqKey as string }
             : {}),
-        ...(wrapper.iv !== undefined
-            ? { iv: wrapper.iv as string }
+        ...(wrapper.base64iv !== undefined
+            ? { base64iv: wrapper.base64iv as string }
             : {}),
     };
 

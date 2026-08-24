@@ -30,6 +30,7 @@ export function requestValidator(
   }
 
   const contentType = normalizeMediaType(contentTypeValues[0]);
+  context.requestMediaType = contentType;
 
   // ===== Request Parsing =====
 

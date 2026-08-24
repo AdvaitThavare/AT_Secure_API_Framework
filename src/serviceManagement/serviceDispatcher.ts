@@ -4,7 +4,7 @@ import type { ServiceResponse } from './serviceResponse';
 
 type ServiceHandler = (
   payload: unknown,
-  contentType: string
+  requestMediaType: string
 ) => ServiceResponse;
 
 const services = new Map<string, ServiceHandler>([
@@ -14,8 +14,8 @@ const services = new Map<string, ServiceHandler>([
 export function serviceDispatcher(
   route: Route,
   payload: unknown,
-  contentType: string
+  requestMediaType: string
 ): ServiceResponse {
 
-  return services.get(route.service)!(payload, contentType);
+  return services.get(route.service)!(payload, requestMediaType);
 }

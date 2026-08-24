@@ -4,12 +4,19 @@ import type { ServiceResponse } from '../serviceManagement/serviceResponse';
 export function sendResponse(
   res: ServerResponse,
   serviceResponse: ServiceResponse,
-  body: string
-): void {  
+  responseBody: string,
+  responseHeaders: Record<string, string[]>
+): void {
+
+  const finalResponseHeaders = {
+    ...serviceResponse.responseHeaders,
+    ...responseHeaders,
+  };
+
   res.writeHead(
     serviceResponse.statusCode,
-    serviceResponse.responseHeaders
+    finalResponseHeaders
   );
 
-  res.end(body);
+  res.end(responseBody);
 }

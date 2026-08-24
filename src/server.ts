@@ -1,6 +1,4 @@
-import https from 'node:https';
-import { serverConfig } from './serverManagement/serverConfig';
-import { getTLSConfig } from './serverManagement/tlsConfig';
+import { createHTTPSServer, startHTTPSServer } from './serverManagement/httpsServer';
 import { sendError } from './errors/errorHandler';
 import { requestValidator } from './payloadFormatValidation/requestValidator';
 import { methodRouter } from './requestRouting/methodRouter';
@@ -11,14 +9,12 @@ import { encWrapperValidator } from './payloadFormatValidation/encWrapperValidat
 import { decryptPayload, encryptPayload } from './cryptography/cryptographyLayer';
 import { sendResponse } from './responseHandler/responseHandler';
 import { responseSerializer } from './responseHandler/responseSerialization/responseSerializer';
-import { HEADER_ENC_WRAPPER_CONTENT_TYPE } from './constants/headerConstants';
 import { requestHandler } from './requestHandler/requestHandler';
 
 
-const server = https.createServer(
-  getTLSConfig(),
+const server = createHTTPSServer(
   async (req, res) => {
-    const context = await requestHandler(req, res);
+    const context = await requestHandler(req);
 
     const methodError = methodRouter(context);
 
@@ -69,14 +65,11 @@ const server = https.createServer(
       return;
     }
 
-    const contentType =
-      context.requestHeaders['content-type']?.[0] ?? '';
-
     const serviceResponse =
       serviceDispatcher(
         route,
         context.payload,
-        contentType
+        context.requestMediaType!
       );
 
     let responseBody =
@@ -95,16 +88,14 @@ const server = https.createServer(
       }
 
       responseBody = encryptResult.responseBody;
-      serviceResponse.responseHeaders[HEADER_ENC_WRAPPER_CONTENT_TYPE] = ['application/json'];
     }
 
     sendResponse(
       res,
       serviceResponse,
-      responseBody
+      responseBody,
+      context.responseHeaders
     );
   });
 
-server.listen(serverConfig.port, serverConfig.host, () => {
-  console.log('mTLS Echo Server running at https://localhost:8443');
-});
+startHTTPSServer(server);

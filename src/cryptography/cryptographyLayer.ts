@@ -7,6 +7,7 @@ import { decryptAES_RSA } from './encryptionMethods/AES_RSA/decryptAES_RSA';
 import { encryptAES_RSA } from './encryptionMethods/AES_RSA/encryptAES_RSA';
 import { decryptJWS_AES_RSA } from './encryptionMethods/JWS_AES_RSA/decryptJWS_AES_RSA';
 import { encryptJWS_AES_RSA } from './encryptionMethods/JWS_AES_RSA/encryptJWS_AES_RSA';
+import { HEADER_ENC_WRAPPER_CONTENT_TYPE } from '../constants/headerConstants';
 
 type CryptoDecryptionHandler = (
     context: RequestContext,
@@ -90,12 +91,18 @@ export async function encryptPayload(
             responseBody: '',
         };
     }
-
-    return await handler.encrypt(
+    const result = await handler.encrypt(
         context,
         cryptoExecutionContext,
         responseBody
     );
+
+    if (!result.error) {
+        context.responseHeaders[HEADER_ENC_WRAPPER_CONTENT_TYPE] =
+            ['application/json'];
+    }
+
+    return result;
 }
 
 // ===== Cryptographic Strategies =====

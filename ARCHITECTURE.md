@@ -565,3 +565,43 @@ Future development guideline (to be documented in architecture md after cleanup)
     Strict Rule to be established
     Raw HTTP headers are accessed through context.requestHeaders / context.responseHeaders. Derived semantic values are stored in RequestContext and consumed by downstream layers. No downstream layer should reinterpret framework headers when a semantic value already exists.
 
+Refactor server.ts so that it acts primarily as the HTTP/HTTPS bootstrap and request/response pipeline orchestrator. The request-processing flow should remain explicitly visible in server.ts, with each layer invoked sequentially and its result checked using a consistent error → sendError() → return pattern.
+
+Move request preparation, header normalization, payload handling, Content-Type extraction, protocol-specific response-header construction, and other implementation responsibilities into their appropriate dedicated layers. Extract HTTPS server creation/bootstrap logic from server.ts where practical.
+
+Conditional branches for plain versus encrypted flows may remain in server.ts when they represent genuine pipeline orchestration decisions. However, protocol-specific implementation details must remain encapsulated within their respective layers.
+
+The resulting server.ts should be easy to read as a high-level representation of the framework pipeline, without requiring knowledge of the internal implementation of individual layers.
+
+Mini-roadmap — Server Orchestration Refactor
+Extract HTTPS server creation/bootstrap
+Move https.createServer(...) and server.listen(...) responsibilities into the appropriate server/bootstrap layer.
+Keep TLS configuration and server lifecycle concerns outside the orchestration logic.
+Use requestHandler as the request preparation boundary
+server.ts should receive the prepared RequestContext.
+Request body collection and RequestContext construction stay outside server.ts.
+Header normalization remains part of request preparation.
+Remove direct header interpretation
+Remove direct Content-Type extraction from server.ts.
+Use the appropriate normalized/derived value from the request-processing layers/context.
+Preserve visible pipeline orchestration
+Keep sequential layer calls in server.ts.
+
+Standardize the pattern:
+
+layer → result → error? → sendError → return
+Don't hide the entire pipeline behind another generic processRequest() abstraction.
+Keep plain/encrypted branching only where it represents orchestration
+ENCRYPTED → wrapper validation → decryption.
+PLAIN → skip encrypted-specific processing.
+Avoid moving genuine pipeline decisions unnecessarily.
+Remove protocol-specific response logic
+Encryption-specific response-header construction should leave server.ts.
+Response serialization/encryption should remain delegated to their respective layers.
+server.ts should only coordinate their execution and handle failures.
+Review final server.ts
+Verify that every remaining statement is either:
+HTTPS/bootstrap responsibility,
+pipeline orchestration, or
+final HTTP response delivery.
+Anything else should be challenged and moved if appropriate.

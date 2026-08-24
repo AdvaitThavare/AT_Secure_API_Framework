@@ -33,7 +33,7 @@ export async function decryptJWS_AES_RSA(
         wrapper!.payload
     );
 
-    const iv = decodeBase64(wrapper!.iv!);
+    const iv = decodeBase64(wrapper!.base64iv!);
 
     // ===== Store Cryptographic Execution Context -1 =====
 
