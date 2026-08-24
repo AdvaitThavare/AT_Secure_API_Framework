@@ -239,6 +239,8 @@ Phase 2 — API Security Expansion      Planned
 
 Phase 2 is expected to introduce:
 
+* Establish the ServiceContext boundary.
+* Add the encryption/decryption API service.
 * Unified URL/method validation
 * Automated regression testing
 * Client ID / Client Secret
