@@ -18,3 +18,20 @@ export interface RequestContext {
   encryptionType?: DataEncryption;
   encryptedWrapper?: EncryptedWrapper;
 }
+
+export type ServiceContext = Pick<
+  RequestContext,
+  'requestHeaders' |
+  'requestMediaType' |
+  'payload'
+>;
+
+export function createServiceContext(
+  context: RequestContext
+): ServiceContext {
+  return {
+    requestHeaders: context.requestHeaders,
+    requestMediaType: context.requestMediaType,
+    payload: context.payload,
+  };
+}

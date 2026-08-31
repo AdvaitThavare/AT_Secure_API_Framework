@@ -10,6 +10,7 @@ import { decryptPayload, encryptPayload } from './cryptography/cryptographyLayer
 import { sendResponse } from './responseHandler/responseHandler';
 import { responseSerializer } from './responseHandler/responseSerialization/responseSerializer';
 import { requestHandler } from './requestHandler/requestHandler';
+import { createServiceContext } from './context/requestContext';
 
 
 const server = createHTTPSServer(
@@ -65,11 +66,12 @@ const server = createHTTPSServer(
       return;
     }
 
+    const serviceContext = createServiceContext(context);
+
     const serviceResponse =
-      serviceDispatcher(
+      await serviceDispatcher(
         route,
-        context.payload,
-        context.requestMediaType!
+        serviceContext
       );
 
     let responseBody =

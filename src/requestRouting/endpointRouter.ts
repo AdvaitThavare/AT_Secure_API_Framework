@@ -7,6 +7,8 @@ export type Route = {
 
 const routes = new Map<string, Route>([
   ['/echo', { service: 'echoService' }],
+  ['/clientCryptography/encryptJWE', { service: 'clientencryptJWE' }],
+  ['/clientCryptography/decryptJWE', { service: 'clientdecryptJWE' }],
 ]);
 
 export function endpointRouter(
