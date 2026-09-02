@@ -1,19 +1,28 @@
 export type ParseResult =
   | {
-      success: true;
-      payload: unknown;
-    }
+    success: true;
+    payload: unknown;
+  }
   | {
-      success: false;
-    };
+    success: false;
+  };
 
 type RequestParser = (rawBody: string) => ParseResult;
 
 export function parseJSON(rawBody: string): ParseResult {
   try {
+    const payload = JSON.parse(rawBody);
+
+    if (
+      typeof payload !== 'object' ||
+      payload === null ||
+      Array.isArray(payload)
+    ) {
+      return { success: false };
+    }
     return {
       success: true,
-      payload: JSON.parse(rawBody),
+      payload,
     };
   } catch {
     return {
