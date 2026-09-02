@@ -9,6 +9,10 @@ const routes = new Map<string, Route>([
   ['/echo', { service: 'echoService' }],
   ['/clientCryptography/encryptJWE', { service: 'clientencryptJWE' }],
   ['/clientCryptography/decryptJWE', { service: 'clientdecryptJWE' }],
+  ['/clientCryptography/encryptAES_RSA', { service: 'clientencryptAES_RSA' }],
+  ['/clientCryptography/decryptAES_RSA', { service: 'clientdecryptAES_RSA' }],
+  ['/clientCryptography/encryptJWS_AES_RSA', { service: 'clientencryptJWS_AES_RSA' }],
+  ['/clientCryptography/decryptJWS_AES_RSA', { service: 'clientdecryptJWS_AES_RSA' }],
 ]);
 
 export function endpointRouter(

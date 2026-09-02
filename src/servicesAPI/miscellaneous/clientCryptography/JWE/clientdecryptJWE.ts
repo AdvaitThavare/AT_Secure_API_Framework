@@ -1,3 +1,15 @@
+ /**
+  * Encryption Type : JWE
+  * Standard        : JOSE
+  * Content Cipher  : AES-256-GCM
+  * Key Decryption  : RSA-OAEP-256
+  * RSA Padding     : OAEP
+  * OAEP Hash       : SHA-256
+  * IV              : 12 bytes
+  * Auth Tag        : 128 bits
+  * Signature       : None
+  */
+
 import { constants } from 'node:crypto';
 import { decryptAES_GCM } from '../../../../cryptography/cryptoAlgorithms/AES_Utility/AES_GCM';
 import { decryptRSA } from '../../../../cryptography/cryptoAlgorithms/RSA_Utility/RSA_Crypto';
@@ -5,7 +17,7 @@ import { bytesToString, decodeBase64Url, stringToBytes } from '../../../../crypt
 import type { ServiceContext } from '../../../../context/requestContext';
 import type { ServiceResponse } from '../../../../serviceManagement/serviceResponse';
 import { getClientCryptoConfig } from '../clientCryptoConfig';
-import { cryptoResponseSerializer } from '../clientCryptoResponseSerializer';
+import { clientCryptoResponseSerializer } from '../clientCryptoResponseSerializer';
 
 const { clientPrivateKey } = getClientCryptoConfig();
 
@@ -154,7 +166,7 @@ export async function clientdecryptJWE(
     };
   }
 
-  const serializedResponse = cryptoResponseSerializer(decryptedBuffer);
+  const serializedResponse = clientCryptoResponseSerializer(decryptedBuffer);
 
   return {
     statusCode: 200,

@@ -1,13 +1,13 @@
 import { bytesToString } from '../../../cryptography/commonCrypto/commonCryptoUtilities';
 
-export type CryptoResponseSerializationResult = {
+export type clientCryptoResponseSerializationResult = {
   payload: unknown;
   contentType: string;
 };
 
-export function cryptoResponseSerializer(
+export function clientCryptoResponseSerializer(
   decryptedPayload: ArrayBuffer
-): CryptoResponseSerializationResult {
+): clientCryptoResponseSerializationResult {
 
   const payload = bytesToString(decryptedPayload);
 

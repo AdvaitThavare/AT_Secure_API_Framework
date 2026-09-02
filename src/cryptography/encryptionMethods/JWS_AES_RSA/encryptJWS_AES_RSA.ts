@@ -22,7 +22,7 @@ const { serverPrivateKey, clientPublicKey } = getCryptoFunctionKeys();
 export type JWSAESRSAResponse = {
     encResPayload: string;
     encResKey: string;
-    iv: string;
+    base64iv: string;
 };
 
 export async function encryptJWS_AES_RSA(
@@ -130,7 +130,7 @@ export async function encryptJWS_AES_RSA(
         responseBody: JSON.stringify({
             encResPayload: encodeBase64(new Uint8Array(encryptedBuffer)),
             encResKey: encodeBase64(encryptedKey),
-            iv: encodeBase64(iv),
+            base64iv: encodeBase64(iv),
         } satisfies JWSAESRSAResponse),
     };
 }
