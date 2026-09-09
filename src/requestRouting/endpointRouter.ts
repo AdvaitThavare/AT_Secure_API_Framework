@@ -29,7 +29,7 @@ export function endpointRouter(
   return {
     category: 'SERVER',
     statusCode: 404,
-    errorCode: 'NOT_FOUND',
+    errorCode: 'SERVICE_NOT_FOUND',
     message: 'Endpoint not found',
   };
 }

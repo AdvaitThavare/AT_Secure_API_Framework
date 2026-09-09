@@ -1189,3 +1189,358 @@ Phase 2 — API Security Expansion       In Progress / Planned
 ```
 
 Phase 2 begins with the ServiceContext boundary and an encryption/decryption API service before expanding into routing, client subscriptions, authentication, persistence, and multi-client identity.
+
+Phase-2-Step-1 (Automated Regression Testing suite)
+✅ Playwright installed in the existing repository
+
+✅ Framework source remains separated from tests
+
+✅ Playwright can connect to local HTTPS/mTLS server
+
+✅ Entire suite can be triggered with one command
+
+✅ Plain JSON flow covered
+
+✅ Plain text flow covered
+
+✅ JWE E2E flow covered
+
+✅ AES_RSA E2E flow covered
+
+✅ JWS_AES_RSA E2E flow covered
+
+✅ Client crypto services covered
+
+✅ Important validation failures covered
+
+✅ Expected status/error contracts asserted
+
+✅ Entire suite passes against the current framework
+
+✅ The resulting suite becomes the regression baseline
+
+Revised Phase-2 roadmap
+
+Phase 2 — Application / API Security Expansion
+
+Step 0 — ServiceContext + Client Crypto APIs
+             ✅ Complete
+
+Step 1 — Automated E2E Regression Suite
+             ← NEXT
+
+Step 2 — Unified URL / Method Validation
+             Planned
+
+Step 3 — Client Identity + API Subscriptions
+             Planned
+
+Step 4 — Authentication + Authorization
+             Planned
+
+Step 5 — Realistic APIs + Persistence
+             Planned
+
+Step 6 — Multiple Client-Certificate Identity Mapping
+             Planned
+
+
+
+*******************************Discussed Points Section*******************************
+
+Step-2 ImplementationDetails:
+
+### API Gateway / Flow Validation and Service Registry — Architectural Approach
+
+As the framework evolves, the current routing/dispatch design will be consolidated around a centralized **Service Registry** and a dedicated **API Gateway / Flow Validation layer**.
+
+#### 1. Purpose
+
+The purpose of this future layer is to validate whether an incoming request is a valid request **for the selected API flow**, before the request is dispatched to the actual API service.
+
+This is intentionally different from the existing `requestValidator`.
+
+`requestValidator` is responsible for **generic request validity**, such as:
+
+* request payload parsing success/failure
+* basic payload representation rules
+* generic validation/error handling
+
+The future API Gateway / Flow Validator is responsible for **API-specific request compatibility**, such as:
+
+* whether the endpoint exists
+* whether the HTTP method is allowed for that endpoint
+* whether the requested payload state is allowed for that API
+* whether the requested encryption type is allowed for that API
+* whether the declared request media type is compatible with that API flow
+* other API-level routing/flow restrictions introduced in the future
+
+The layer validates and makes routing/flow decisions, but it **does not execute the API service**.
+
+#### 2. Naming
+
+The current `endpointRouter` and `methodRouter` are expected to be replaced by a more centralized component in the future.
+
+The term `URLValidator` is considered too narrow because the future component will validate more than URL/endpoint correctness.
+
+`APIRequestValidator` is also intentionally avoided as the preferred name because it is too similar to the existing `requestValidator`, which has a different responsibility.
+
+The preferred architectural concept is therefore:
+
+**API Gateway / Flow Validator**
+
+The exact final class/module name can be decided when this architecture is implemented.
+
+#### 3. Single Service Registry
+
+The framework should maintain **one Service Registry as the single source of truth** for API definitions.
+
+Both the future API Gateway / Flow Validator and the Service Dispatcher will consume the same registry.
+
+Conceptually:
+
+```
+Incoming Request
+       |
+       v
+API Gateway / Flow Validator
+       |
+       |---- consults Service Registry
+       |      - endpoint exists?
+       |      - method allowed?
+       |      - flow allowed?
+       |      - encryption allowed?
+       |
+       v
+Service Dispatcher
+       |
+       |---- consults the same Service Registry
+       |      - resolve service reference
+       |
+       v
+  API Service
+```
+
+There should not be two independent registries containing overlapping API definitions.
+
+Maintaining separate registries could allow configuration drift where the validator approves one service/flow while the dispatcher resolves a different service.
+
+#### 4. Initial Service Registry Implementation
+
+The first implementation of the Service Registry does **not need a database**.
+
+For the current framework stage, use a small **in-code TypeScript registry**.
+
+The purpose of this initial registry is to establish the correct architectural abstraction before introducing persistence.
+
+The in-code registry should describe each API as an API definition/configuration rather than being tightly coupled to the service implementation.
+
+A registry entry can conceptually contain fields such as:
+
+* `method`
+* `endpoint`
+* `domain`
+* `serviceKey` / service reference
+* allowed payload state(s)
+* allowed encryption type(s)
+* allowed media type(s)
+* other future API-level constraints
+
+Example conceptually:
+
+```
+POST /echo
+    domain: miscellaneous
+    serviceKey: echo
+    allowedPayloadState: PLAIN
+    allowedEncryptionType: NA
+
+POST /clientCryptography/encryptJWE
+    domain: clientCryptography
+    serviceKey: clientEncryptJWE
+    allowedPayloadState: PLAIN
+    allowedEncryptionType: NA
+
+POST /clientCryptography/decryptJWE
+    domain: clientCryptography
+    serviceKey: clientDecryptJWE
+    allowedPayloadState: ENCRYPTED
+    allowedEncryptionType: JWE
+```
+
+The exact TypeScript structure is intentionally not fixed here and can evolve when implementation begins.
+
+#### 5. Registry Values Are Constraints, Not Boolean Flags
+
+Fields such as payload state and encryption type should conceptually represent **allowed values/constraints**, not simple true/false flags.
+
+For example, an API may eventually support:
+
+* only `PLAIN`
+* only `ENCRYPTED + JWE`
+* more than one supported payload state
+* more than one supported encryption type
+
+Therefore the registry design should not assume these fields are always binary flags.
+
+#### 6. Future Database Registry
+
+When the framework becomes large enough to require persistence, the in-code registry should be replaceable by a database-backed registry.
+
+The intended evolution is:
+
+```
+Current:
+TypeScript Service Registry
+        |
+        +--> API Gateway / Flow Validator
+        |
+        +--> Service Dispatcher
+
+Future:
+Database
+   |
+   v
+Service Registry / repository abstraction
+   |
+   +--> API Gateway / Flow Validator
+   |
+   +--> Service Dispatcher
+```
+
+The database becomes the persistence mechanism; the **Service Registry remains the architectural abstraction**.
+
+The goal is therefore not to make the application layers directly dependent on SQL/database details.
+
+The layers should consume the registry abstraction, while the registry can later obtain its definitions from a database.
+
+#### 7. API Gateway / Flow Validation vs Payload Parsing
+
+A critical architectural distinction:
+
+**Payload validity is not the same as API flow validity.**
+
+Example:
+
+`/clientCryptography/encryptJWE` may be defined to accept:
+
+```
+payloadState = PLAIN
+encryptionType = NA
+```
+
+A request may nevertheless contain a JSON object that, after some processing, looks perfectly valid as JSON.
+
+That does not mean the request is valid for the `encryptJWE` API.
+
+The parser answers:
+
+```
+"Can this payload be interpreted correctly?"
+```
+
+The API Gateway / Flow Validator answers:
+
+```
+"Is this payload/encryption flow permitted for this API?"
+```
+
+The crypto layer answers:
+
+```
+"Can the cryptographic operation be successfully performed?"
+```
+
+The service answers:
+
+```
+"What should this API do?"
+```
+
+These responsibilities should remain separate.
+
+#### 8. Expected Future Request Flow
+
+The intended future high-level flow is:
+
+```
+Transport Layer
+    |
+    v
+API Gateway / Flow Validator
+    |
+    |-- endpoint validation
+    |-- method validation
+    |-- required API metadata validation
+    |-- payload-state compatibility
+    |-- encryption-type compatibility
+    |-- media-type/API compatibility
+    |
+    v
+Service Dispatcher
+    |
+    |-- resolve service from Service Registry
+    |
+    v
+Service
+    |
+    v
+Crypto / business processing as applicable
+    |
+    v
+Response handling
+```
+
+The exact position of payload parsing/decryption relative to flow validation may evolve depending on the final request pipeline, but API flow compatibility must remain distinct from generic payload parsing and from actual service execution.
+
+#### 9. Relationship to the Regression Suite
+
+This architecture should eventually be reflected in the regression suite.
+
+The suite should protect at least three different concepts:
+
+1. **Routing validity**
+
+   * unknown endpoint
+   * unsupported HTTP method
+   * routing metadata problems
+2. **API flow validity**
+
+   * API called with unsupported payload state
+   * API called with unsupported encryption type
+   * incompatible combinations of API + payload state + encryption type + media type
+3. **Service behavior**
+
+   * successful Plain APIs
+   * successful client cryptography APIs
+   * successful encrypted E2E journeys
+   * service-specific validation failures
+
+This distinction should prevent the regression suite from treating all `400` responses as the same kind of failure.
+
+#### 10. Architectural Goal
+
+The long-term goal is to make API definitions declarative and centralized.
+
+Instead of scattering API behavior across:
+
+* endpoint routing maps
+* method routing maps
+* dispatcher maps
+* hard-coded payload/encryption assumptions
+
+the Service Registry should become the authoritative definition of each API.
+
+The API Gateway / Flow Validator uses that definition to determine:
+
+```
+"Is this request valid for this API?"
+```
+
+The Service Dispatcher uses the same definition to determine:
+
+```
+"Which service implementation handles this API?"
+```
+
+This provides a single source of truth, avoids configuration drift, supports future database persistence, and allows API-level flow restrictions to be enforced consistently without coupling the generic request parser/validator or the individual services to routing policy.
