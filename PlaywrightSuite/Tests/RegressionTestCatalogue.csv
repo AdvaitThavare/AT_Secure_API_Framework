@@ -1,62 +1,58 @@
-Test ID,Category,Type,Priority,Test Case,Expected Result,Status
-TLS-NEG-001,Transport Layer,NEG,P0,Missing client certificate,TLS connection is rejected,Not Implemented
-TLS-NEG-002,Transport Layer,NEG,P0,Untrusted client certificate,TLS connection is rejected,Not Implemented
-TLS-NEG-003,Transport Layer,NEG,P1,Invalid client certificate/private-key pair,TLS authentication fails,Not Implemented
-TLS-NEG-004,Transport Layer,NEG,P1,Invalid server hostname,TLS hostname/certificate validation fails,Not Implemented
-RTE-NEG-001,Routing Layer,NEG,P0,Unsupported HTTP method,Unsupported HTTP method is rejected with 405,Implemented
-RTE-NEG-002,Routing Layer,NEG,P0,Unknown endpoint,HTTP 404 with SERVICE_NOT_FOUND error response,Implemented
-RTE-NEG-003,Routing Layer,NEG,P0,Missing payload-state header,Request is rejected,Implemented
-RTE-NEG-004,Routing Layer,NEG,P0,Missing data-encryption header,Request is rejected,Implemented
-RTE-NEG-005,Routing Layer,NEG,P0,Missing encryption-wrapper Content-Type header,Request is rejected,Implemented
-RTE-NEG-006,Routing Layer,NEG,P0,Invalid payload-state value,Request is rejected,Implemented
-RTE-NEG-007,Routing Layer,NEG,P0,Invalid data-encryption value,Request is rejected,Implemented
-RTE-NEG-008,Routing Layer,NEG,P1,Invalid encryption-wrapper Content-Type value,Request is rejected,Implemented
-RTE-NEG-009,Routing Layer,NEG,P1,Invalid framework-header combination,Request is rejected,Implemented
-PLN-POS-001,Plain,POS,P0,Simple JSON object,Request succeeds and original payload is returned,Implemented
-PLN-POS-002,Plain,POS,P1,Nested JSON object,Nested payload structure is preserved,Implemented
-PLN-POS-003,Plain,POS,P0,Plain text,Request succeeds and expected text is returned,Implemented
-PLN-POS-004,Plain,POS,P1,Plain text containing JSON-like content,Content remains plain text,Implemented
-PLN-NEG-001,Plain,NEG,P0,Malformed JSON,Request is rejected with invalid-payload error contract,Implemented
-PLN-NEG-002,Plain,NEG,P0,Top-level JSON array,Request is rejected,Implemented
-PLN-NEG-003,Plain,NEG,P0,Top-level JSON null,Request is rejected,Implemented
-PLN-NEG-004,Plain,NEG,P0,Top-level JSON primitive,Request is rejected,Implemented
-PLN-NEG-005,Plain,NEG,P0,JSON Content-Type with non-JSON body,Request is rejected,Implemented
-PLN-NEG-006,Plain,NEG,P0,Unsupported Content-Type,415 response with UNSUPPORTED_CONTENT_TYPE and expected error structure,Implemented
-PLN-NEG-007,Plain,NEG,P1,Empty JSON request body,Request is rejected,Implemented
-CRY-NEG-001,Client Crypto,NEG,P1,JWE encrypt ? service-level invalid input,Controlled validation failure,Not Implemented
-CRY-NEG-002,Client Crypto,NEG,P1,AES_RSA encrypt ? service-level invalid input,Controlled validation failure,Not Implemented
-CRY-NEG-003,Client Crypto,NEG,P1,JWS_AES_RSA encrypt ? service-level invalid input,Controlled validation failure,Not Implemented
-CRY-NEG-004,Client Crypto,NEG,P0,JWE decrypt malformed JWE,Controlled decrypt failure,Not Implemented
-CRY-NEG-005,Client Crypto,NEG,P0,JWE decrypt invalid cryptographic content,Controlled cryptographic failure,Not Implemented
-CRY-NEG-006,Client Crypto,NEG,P0,AES_RSA decrypt missing encrypted payload,Controlled validation failure,Not Implemented
-CRY-NEG-007,Client Crypto,NEG,P0,AES_RSA decrypt missing encrypted key,Controlled validation failure,Not Implemented
-CRY-NEG-008,Client Crypto,NEG,P0,AES_RSA decrypt missing IV,Controlled validation failure,Not Implemented
-CRY-NEG-009,Client Crypto,NEG,P0,AES_RSA decrypt invalid encrypted data,Controlled cryptographic failure,Not Implemented
-CRY-NEG-010,Client Crypto,NEG,P0,JWS_AES_RSA decrypt missing encrypted payload,Controlled validation failure,Not Implemented
-CRY-NEG-011,Client Crypto,NEG,P0,JWS_AES_RSA decrypt missing encrypted key,Controlled validation failure,Not Implemented
-CRY-NEG-012,Client Crypto,NEG,P0,JWS_AES_RSA decrypt missing IV,Controlled validation failure,Not Implemented
-CRY-NEG-013,Client Crypto,NEG,P0,JWS_AES_RSA invalid JWS signature,Signature verification failure is handled correctly,Not Implemented
-CRY-NEG-014,Client Crypto,NEG,P0,JWS_AES_RSA invalid cryptographic content,Controlled cryptographic failure,Not Implemented
-ENC-POS-001,Encrypted,POS,P0,JWE echo round trip,Decrypted payload matches original payload,Not Implemented
-ENC-POS-002,Encrypted,POS,P0,AES_RSA echo round trip,Decrypted payload matches original payload,Not Implemented
-ENC-POS-003,Encrypted,POS,P0,JWS_AES_RSA echo round trip,Decrypted and verified payload matches original payload,Not Implemented
-ENC-NEG-001,Encrypted,NEG,P0,JWE ? Invalid encrypted wrapper,Request is rejected,Not Implemented
-ENC-NEG-002,Encrypted,NEG,P0,AES_RSA ? Invalid encrypted wrapper,Request is rejected,Not Implemented
-ENC-NEG-003,Encrypted,NEG,P0,JWS_AES_RSA ? Invalid encrypted wrapper,Request is rejected,Not Implemented
-ENC-NEG-004,Encrypted,NEG,P0,JWE ? corrupted ciphertext,Controlled cryptographic failure,Not Implemented
-ENC-NEG-005,Encrypted,NEG,P0,AES_RSA ? corrupted ciphertext,Controlled cryptographic failure,Not Implemented
-ENC-NEG-006,Encrypted,NEG,P0,JWS_AES_RSA ? corrupted ciphertext,Controlled cryptographic failure,Not Implemented
-ENC-NEG-007,Encrypted,NEG,P0,JWE ? encryption metadata does not match encrypted representation,Request is rejected,Not Implemented
-ENC-NEG-008,Encrypted,NEG,P0,AES_RSA ? encryption metadata does not match encrypted representation,Request is rejected,Not Implemented
-ENC-NEG-009,Encrypted,NEG,P0,JWS_AES_RSA ? encryption metadata does not match encrypted representation,Request is rejected,Not Implemented
-ENC-NEG-010,Encrypted,NEG,P1,AES_RSA ? invalid encrypted key,Controlled cryptographic failure,Not Implemented
-ENC-NEG-011,Encrypted,NEG,P1,JWS_AES_RSA ? invalid encrypted key,Controlled cryptographic failure,Not Implemented
-ENC-NEG-012,Encrypted,NEG,P1,AES_RSA ? invalid IV,Controlled cryptographic failure,Not Implemented
-ENC-NEG-013,Encrypted,NEG,P1,JWS_AES_RSA ? invalid IV,Controlled cryptographic failure,Not Implemented
-ENC-NEG-014,Encrypted,NEG,P0,JWS_AES_RSA ? signature verification failure,Signature verification failure is handled correctly,Not Implemented
-,,,,,,
-,,,,,,
-,,,,,,
-,,,,,,
-,,,,,,
-,,,,,,
+Test ID,Category,Type,Priority,Test Case,Expected Result,Status,Note
+TLS-NEG-001,Transport Layer,NEG,P0,Missing client certificate,TLS connection is rejected,Implemented,
+TLS-NEG-002,Transport Layer,NEG,P0,Client certificate signed by untrusted CA,TLS connection is rejected,Implemented,
+TLS-NEG-003,Transport Layer,NEG,P1,Invalid client certificate/private-key pair,TLS authentication fails,Implemented,
+TLS-NEG-004,Transport Layer,NEG,P1,Invalid server hostname,TLS hostname/certificate validation fails,Retired,Hostname validation is primarily client/environment configuration behavior and is not a meaningful server-side regression for the current local framework. Revisit when multiple environment endpoints are introduced.
+RTE-NEG-001,Routing Layer,NEG,P0,Unsupported HTTP method,Unsupported HTTP method is rejected with 405,Implemented,
+RTE-NEG-002,Routing Layer,NEG,P0,Unknown endpoint,HTTP 404 with SERVICE_NOT_FOUND error response,Implemented,
+RTE-NEG-003,Routing Layer,NEG,P0,Missing payload-state header,Request is rejected,Implemented,
+RTE-NEG-004,Routing Layer,NEG,P0,Missing data-encryption header,Request is rejected,Implemented,
+RTE-NEG-005,Routing Layer,NEG,P0,Missing encryption-wrapper Content-Type header,Request is rejected,Implemented,
+RTE-NEG-006,Routing Layer,NEG,P0,Invalid payload-state value,Request is rejected,Implemented,
+RTE-NEG-007,Routing Layer,NEG,P0,Invalid data-encryption value,Request is rejected,Implemented,
+RTE-NEG-008,Routing Layer,NEG,P1,Invalid encryption-wrapper Content-Type value,Request is rejected,Implemented,
+RTE-NEG-009,Routing Layer,NEG,P1,Invalid framework-header combination,Request is rejected,Implemented,
+PLN-POS-001,Plain,POS,P0,Simple JSON object,Request succeeds and original payload is returned,Implemented,
+PLN-POS-002,Plain,POS,P1,Nested JSON object,Nested payload structure is preserved,Implemented,
+PLN-POS-003,Plain,POS,P0,Plain text,Request succeeds and expected text is returned,Implemented,
+PLN-POS-004,Plain,POS,P1,Plain text containing JSON-like content,Content remains plain text,Implemented,
+PLN-NEG-001,Plain,NEG,P0,Malformed JSON,Request is rejected with invalid-payload error contract,Implemented,
+PLN-NEG-002,Plain,NEG,P0,Top-level JSON array,Request is rejected,Implemented,
+PLN-NEG-003,Plain,NEG,P0,Top-level JSON null,Request is rejected,Implemented,
+PLN-NEG-004,Plain,NEG,P0,Top-level JSON primitive,Request is rejected,Implemented,
+PLN-NEG-005,Plain,NEG,P0,JSON Content-Type with non-JSON body,Request is rejected,Implemented,
+PLN-NEG-006,Plain,NEG,P0,Unsupported Content-Type,415 response with UNSUPPORTED_CONTENT_TYPE and expected error structure,Implemented,
+PLN-NEG-007,Plain,NEG,P1,Empty JSON request body,Request is rejected,Implemented,
+CRY-NEG-001,Client Crypto,NEG,P1,JWE encrypt - unsupported service request Content-Type,Controlled validation failure,Retired,"Implement this, when we have more mediaTypes supported in framework and clientCrypto services only support a select few from the list."
+CRY-NEG-002,Client Crypto,NEG,P1,AES_RSA encrypt - unsupported service request Content-Type,Controlled validation failure,Retired,"Implement this, when we have more mediaTypes supported in framework and clientCrypto services only support a select few from the list."
+CRY-NEG-003,Client Crypto,NEG,P1,JWS_AES_RSA encrypt - unsupported service request Content-Type,Controlled validation failure,Retired,"Implement this, when we have more mediaTypes supported in framework and clientCrypto services only support a select few from the list."
+CRY-NEG-004,Client Crypto,NEG,P0,JWE decrypt missing/invalid encResPayload,Controlled validation failure,Implemented,
+CRY-NEG-005,Client Crypto,NEG,P0,JWE decrypt malformed JWE,Controlled decrypt failure,Implemented,
+CRY-NEG-006,Client Crypto,NEG,P0,JWE decrypt invalid encrypted key,Controlled cryptographic failure,Implemented,
+CRY-NEG-007,Client Crypto,NEG,P0,JWE decrypt invalid JWE payload,Controlled cryptographic failure,Implemented,
+CRY-NEG-008,Client Crypto,NEG,P0,AES_RSA decrypt missing encrypted payload,Controlled validation failure,Implemented,
+CRY-NEG-009,Client Crypto,NEG,P0,AES_RSA decrypt missing encrypted key,Controlled validation failure,Implemented,
+CRY-NEG-010,Client Crypto,NEG,P0,AES_RSA decrypt missing IV,Controlled validation failure,Implemented,
+CRY-NEG-011,Client Crypto,NEG,P0,AES_RSA decrypt invalid encrypted data,Controlled cryptographic failure,Implemented,
+CRY-NEG-012,Client Crypto,NEG,P0,JWS_AES_RSA decrypt missing encrypted payload,Controlled validation failure,Implemented,
+CRY-NEG-013,Client Crypto,NEG,P0,JWS_AES_RSA decrypt missing encrypted key,Controlled validation failure,Implemented,
+CRY-NEG-014,Client Crypto,NEG,P0,JWS_AES_RSA decrypt missing IV,Controlled validation failure,Implemented,
+CRY-NEG-015,Client Crypto,NEG,P0,JWS_AES_RSA invalid JWS signature,Signature verification failure is handled correctly,Implemented,
+CRY-NEG-016,Client Crypto,NEG,P0,JWS_AES_RSA invalid cryptographic content,Controlled cryptographic failure,Implemented,
+ENC-POS-001,Encrypted,POS,P0,JWE echo round trip,Decrypted payload matches original payload,Not Implemented,
+ENC-POS-002,Encrypted,POS,P0,AES_RSA echo round trip,Decrypted payload matches original payload,Not Implemented,
+ENC-POS-003,Encrypted,POS,P0,JWS_AES_RSA echo round trip,Decrypted and verified payload matches original payload,Not Implemented,
+ENC-NEG-001,Encrypted,NEG,P0,JWE ? Invalid encrypted wrapper,Request is rejected,Not Implemented,
+ENC-NEG-002,Encrypted,NEG,P0,AES_RSA ? Invalid encrypted wrapper,Request is rejected,Not Implemented,
+ENC-NEG-003,Encrypted,NEG,P0,JWS_AES_RSA ? Invalid encrypted wrapper,Request is rejected,Not Implemented,
+ENC-NEG-004,Encrypted,NEG,P0,JWE ? corrupted ciphertext,Controlled cryptographic failure,Not Implemented,
+ENC-NEG-005,Encrypted,NEG,P0,AES_RSA ? corrupted ciphertext,Controlled cryptographic failure,Not Implemented,
+ENC-NEG-006,Encrypted,NEG,P0,JWS_AES_RSA ? corrupted ciphertext,Controlled cryptographic failure,Not Implemented,
+ENC-NEG-007,Encrypted,NEG,P0,JWE ? encryption metadata does not match encrypted representation,Request is rejected,Not Implemented,
+ENC-NEG-008,Encrypted,NEG,P0,AES_RSA ? encryption metadata does not match encrypted representation,Request is rejected,Not Implemented,
+ENC-NEG-009,Encrypted,NEG,P0,JWS_AES_RSA ? encryption metadata does not match encrypted representation,Request is rejected,Not Implemented,
+ENC-NEG-010,Encrypted,NEG,P1,AES_RSA ? invalid encrypted key,Controlled cryptographic failure,Not Implemented,
+ENC-NEG-011,Encrypted,NEG,P1,JWS_AES_RSA ? invalid encrypted key,Controlled cryptographic failure,Not Implemented,
+ENC-NEG-012,Encrypted,NEG,P1,AES_RSA ? invalid IV,Controlled cryptographic failure,Not Implemented,
+ENC-NEG-013,Encrypted,NEG,P1,JWS_AES_RSA ? invalid IV,Controlled cryptographic failure,Not Implemented,
+ENC-NEG-014,Encrypted,NEG,P0,JWS_AES_RSA ? signature verification failure,Signature verification failure is handled correctly,Not Implemented,

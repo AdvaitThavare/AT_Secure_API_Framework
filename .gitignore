@@ -25,3 +25,4 @@ certs/**/*.srl
 certs/**/*.pem
 certs/**/*.p12
 certs/**/*.pfx
+PlaywrightSuite/Tests/TransportLayer/UntrustedCertificate
