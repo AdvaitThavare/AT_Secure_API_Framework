@@ -16,7 +16,10 @@ export async function encryptClientJWE(
         '/clientCryptography/encryptJWE',
         {
             headers: {
+                'x-payload-state': 'PLAIN',
+                'x-data-encryption': 'NA',
                 'content-type': contentType,
+                'x-enc-wrapper-content-type': 'NA',
             },
             data: payload,
         }
@@ -33,14 +36,18 @@ export async function encryptClientJWE(
 
 export async function decryptClientJWE(
     apiContext: APIRequestContext,
-    encryptedResponse: string
+    encryptedResponse: string,
+    contentType: string
 ): Promise<unknown> {
 
     const response = await apiContext.post(
         '/clientCryptography/decryptJWE',
         {
             headers: {
-                'content-type': 'application/json',
+                'x-payload-state': 'PLAIN',
+                'x-data-encryption': 'NA',
+                'content-type': contentType,
+                'x-enc-wrapper-content-type': 'NA',
             },
             data: {
                 encResPayload: encryptedResponse,
@@ -53,8 +60,6 @@ export async function decryptClientJWE(
             `Client JWE decryption failed with status ${response.status()}`
         );
     }
-
-    const contentType = response.headers()['content-type'] ?? '';
 
     if (contentType.includes('application/json')) {
         return await response.json();

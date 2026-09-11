@@ -26,3 +26,6 @@ certs/**/*.pem
 certs/**/*.p12
 certs/**/*.pfx
 PlaywrightSuite/Tests/TransportLayer/UntrustedCertificate
+
+# TestScript Files
+PlaywrightSuite/apiSetup/clientCryptoHelper/transitPayloadTemp

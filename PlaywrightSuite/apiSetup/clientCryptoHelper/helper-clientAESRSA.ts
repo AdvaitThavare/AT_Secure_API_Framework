@@ -16,7 +16,10 @@ export async function encryptClientAESRSA(
         '/clientCryptography/encryptAES_RSA',
         {
             headers: {
+                'x-payload-state': 'PLAIN',
+                'x-data-encryption': 'NA',
                 'content-type': contentType,
+                'x-enc-wrapper-content-type': 'NA',
             },
             data: payload,
         }
@@ -33,14 +36,18 @@ export async function encryptClientAESRSA(
 
 export async function decryptClientAESRSA(
     apiContext: APIRequestContext,
-    encryptedResponse: ClientAESRSAEncryptionResult
+    encryptedResponse: ClientAESRSAEncryptionResult,
+    contentType: string
 ): Promise<unknown> {
 
     const response = await apiContext.post(
         '/clientCryptography/decryptAES_RSA',
         {
             headers: {
-                'content-type': 'application/json',
+                'x-payload-state': 'PLAIN',
+                'x-data-encryption': 'NA',
+                'content-type': contentType,
+                'x-enc-wrapper-content-type': 'NA',
             },
             data: {
                 encResPayload: encryptedResponse.encReqPayload,
@@ -55,8 +62,6 @@ export async function decryptClientAESRSA(
             `Client AES_RSA decryption failed with status ${response.status()}`
         );
     }
-
-    const contentType = response.headers()['content-type'] ?? '';
 
     if (contentType.includes('application/json')) {
         return await response.json();
