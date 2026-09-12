@@ -84,6 +84,21 @@ export async function clientdecryptJWS_AES_RSA(
         };
     }
 
+    const keyLength = aesKey.length * 8;
+
+    if (![128, 192, 256].includes(keyLength)) {
+        return {
+            statusCode: 400,
+            payload: {
+                errorCode: 'INVALID_CEK',
+                message: 'Invalid content encryption key',
+            },
+            responseHeaders: {
+                'content-type': ['application/json'],
+            },
+        };
+    }
+
     // ===== AES-CBC Decryption =====
 
     let decryptedBuffer: ArrayBuffer;

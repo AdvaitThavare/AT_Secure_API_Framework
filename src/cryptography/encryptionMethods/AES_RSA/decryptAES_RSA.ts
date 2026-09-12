@@ -61,9 +61,20 @@ export async function decryptAES_RSA(
         };
     }
 
-    // ===== Store Cryptographic Execution Context -2 =====
+    // ===== Validate CEK =====  // ===== Store Cryptographic Execution Context -2 =====
 
     cryptoExecutionContext.aes.keyLength = decryptedKey.length * 8;
+
+    if (![128, 192, 256].includes(
+        cryptoExecutionContext.aes.keyLength
+    )) {
+        return {
+            category: 'SERVER',
+            statusCode: 400,
+            errorCode: 'INVALID_CEK',
+            message: 'Invalid content encryption key',
+        };
+    }
 
     // ===== AES-CBC Decryption =====
 

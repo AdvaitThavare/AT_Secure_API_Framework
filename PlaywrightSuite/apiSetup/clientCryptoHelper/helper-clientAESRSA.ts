@@ -46,7 +46,7 @@ export async function decryptClientAESRSA(
             headers: {
                 'x-payload-state': 'PLAIN',
                 'x-data-encryption': 'NA',
-                'content-type': contentType,
+                'content-type': 'application/json',
                 'x-enc-wrapper-content-type': 'NA',
             },
             data: {

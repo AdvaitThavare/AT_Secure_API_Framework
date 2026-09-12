@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { decryptClientJWE, encryptClientJWE } from './helper-clientJWE';
 import { decryptClientAESRSA, encryptClientAESRSA } from './helper-clientAESRSA';
-import { decryptClientJWSAESRSA, encryptClientJWSAESRSA } from './helper-clientJWEAESRSA';
+import { decryptClientJWSAESRSA, encryptClientJWSAESRSA } from './helper-clientJWSAESRSA';
 
 const transitPayloadPath = path.resolve(
     process.cwd(),

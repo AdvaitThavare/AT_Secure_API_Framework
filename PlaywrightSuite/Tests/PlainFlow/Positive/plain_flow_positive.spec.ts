@@ -53,7 +53,7 @@ test('PLN_POS_002_NestedJSONobject', async ({ apiContext }) => {
 
   expect(responseBody.responsePayload).toEqual({
     customer: {
-      name: 'Sunita',
+      name: 'Advait',
       address: {
         city: 'Mumbai',
       },
