@@ -80,7 +80,7 @@ test('ENC_POS_002_AESRSAEchoRoundTrip_JSON', async ({ apiContext }) => {
         data: {
             encReqPayload: encryptedRequest.encReqPayload,
             encReqKey: encryptedRequest.encReqKey,
-            base64iv: encryptedRequest.base64iv,
+            base64ivReq: encryptedRequest.base64ivReq,
         },
     });
 
@@ -95,7 +95,7 @@ test('ENC_POS_002_AESRSAEchoRoundTrip_JSON', async ({ apiContext }) => {
         {
             encReqPayload: responseBody.encResPayload,
             encReqKey: responseBody.encResKey,
-            base64iv: responseBody.base64iv,
+            base64ivReq: responseBody.base64iv,
         },
         contentType
     ) as {
@@ -136,7 +136,7 @@ test('ENC_POS_003_JWSAESRSAEchoRoundTrip_JSON', async ({ apiContext }) => {
         data: {
             encReqPayload: encryptedRequest.encReqPayload,
             encReqKey: encryptedRequest.encReqKey,
-            base64iv: encryptedRequest.base64iv,
+            base64iv: encryptedRequest.base64ivReq,
         },
     });
 
@@ -151,7 +151,7 @@ test('ENC_POS_003_JWSAESRSAEchoRoundTrip_JSON', async ({ apiContext }) => {
         {
             encReqPayload: responseBody.encResPayload,
             encReqKey: responseBody.encResKey,
-            base64iv: responseBody.base64iv,
+            base64ivReq: responseBody.base64iv,
         },
         contentType
     ) as {
@@ -228,7 +228,7 @@ test('ENC_POS_005_AESRSAEchoRoundTrip_Text', async ({ apiContext }) => {
         data: {
             encReqPayload: encryptedRequest.encReqPayload,
             encReqKey: encryptedRequest.encReqKey,
-            base64iv: encryptedRequest.base64iv,
+            base64iv: encryptedRequest.base64ivReq,
         },
     });
 
@@ -243,7 +243,7 @@ test('ENC_POS_005_AESRSAEchoRoundTrip_Text', async ({ apiContext }) => {
         {
             encReqPayload: responseBody.encResPayload,
             encReqKey: responseBody.encResKey,
-            base64iv: responseBody.base64iv,
+            base64ivReq: responseBody.base64iv,
         },
         contentType
     );
@@ -274,7 +274,7 @@ test('ENC_POS_006_JWSAESRSAEchoRoundTrip_Text', async ({ apiContext }) => {
         data: {
             encReqPayload: encryptedRequest.encReqPayload,
             encReqKey: encryptedRequest.encReqKey,
-            base64iv: encryptedRequest.base64iv,
+            base64iv: encryptedRequest.base64ivReq,
         },
     });
 
@@ -289,7 +289,7 @@ test('ENC_POS_006_JWSAESRSAEchoRoundTrip_Text', async ({ apiContext }) => {
         {
             encReqPayload: responseBody.encResPayload,
             encReqKey: responseBody.encResKey,
-            base64iv: responseBody.base64iv,
+            base64ivReq: responseBody.base64iv,
         },
         contentType
     );

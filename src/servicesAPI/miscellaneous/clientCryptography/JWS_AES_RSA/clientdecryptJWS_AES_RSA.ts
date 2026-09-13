@@ -25,7 +25,7 @@ const { serverPublicKey, clientPrivateKey } = getClientCryptoConfig();
 type ClientJWSAESRSADecryptRequest = {
     encResPayload: string;
     encResKey: string;
-    base64iv: string;
+    base64ivRes: string;
 };
 
 export async function clientdecryptJWS_AES_RSA(
@@ -35,19 +35,19 @@ export async function clientdecryptJWS_AES_RSA(
     const {
         encResPayload,
         encResKey,
-        base64iv,
+        base64ivRes,
     } = context.payload as ClientJWSAESRSADecryptRequest;
 
     if (
         typeof encResPayload !== 'string' ||
         typeof encResKey !== 'string' ||
-        typeof base64iv !== 'string'
+        typeof base64ivRes !== 'string'
     ) {
         return {
             statusCode: 400,
             payload: {
                 errorCode: 'INVALID_JWS_AES_RSA_REQUEST',
-                message: 'encResPayload, encResKey and base64iv must be strings',
+                message: 'encResPayload, encResKey and base64ivRes must be strings',
             },
             responseHeaders: {
                 'content-type': ['application/json'],
@@ -59,7 +59,7 @@ export async function clientdecryptJWS_AES_RSA(
 
     const encryptedPayload = decodeBase64(encResPayload);
     const encryptedKey = decodeBase64(encResKey);
-    const iv = decodeBase64(base64iv);
+    const iv = decodeBase64(base64ivRes);
 
     // ===== RSA Decryption of AES Key =====
 

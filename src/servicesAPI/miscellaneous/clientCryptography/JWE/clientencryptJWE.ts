@@ -23,8 +23,8 @@ const { serverPublicKey } = getClientCryptoConfig();
 
 type ClientJWEResponse = {
     encReqPayload: string;
-    encReqKey: string;
-    base64iv: string;
+    encReqKey: string | null;
+    base64ivReq: string | null;
 };
 
 export async function clientencryptJWE(
@@ -133,7 +133,7 @@ export async function clientencryptJWE(
         payload: {
             encReqPayload: compactJWE,
             encReqKey: '',
-            base64iv: '',
+            base64ivReq: '',
         } satisfies ClientJWEResponse,
         responseHeaders: {
             'content-type': ['application/json'],

@@ -98,7 +98,7 @@ test('CC_TOOL_003_AESRSA_Encrypt', async ({ apiContext }) => {
         JSON.stringify({
             encReqPayload: encryptedResponse.encReqPayload,
             encReqKey: encryptedResponse.encReqKey,
-            base64iv: encryptedResponse.base64iv,
+            base64ivReq: encryptedResponse.base64ivReq,
         }, null, 4)
     );
 
@@ -121,7 +121,7 @@ test('TOOL_Echo_AESRSA', async ({ apiContext }) => {
         data: {
             encReqPayload: transitPayload.encReqPayload,
             encReqKey: transitPayload.encReqKey,
-            base64iv: transitPayload.base64iv,
+            base64ivReq: transitPayload.base64ivReq,
         },
     });
 
@@ -133,7 +133,7 @@ test('TOOL_Echo_AESRSA', async ({ apiContext }) => {
             ...transitPayload,
             encResPayload: responseBody.encResPayload,
             encResKey: responseBody.encResKey,
-            base64iv: responseBody.base64iv,
+            base64ivRes: responseBody.base64ivRes,
         }, null, 4)
     );
 
@@ -151,7 +151,7 @@ test('CC_TOOL_004_AESRSA_Decrypt', async ({ apiContext }) => {
         {
             encReqPayload: transitPayload.encResPayload,
             encReqKey: transitPayload.encResKey,
-            base64iv: transitPayload.base64iv,
+            base64ivReq: transitPayload.base64ivRes,
         },
         'application/json'
     );
@@ -178,7 +178,7 @@ test('CC_TOOL_005_JWSAESRSA_Encrypt', async ({ apiContext }) => {
         JSON.stringify({
             encReqPayload: encryptedResponse.encReqPayload,
             encReqKey: encryptedResponse.encReqKey,
-            base64iv: encryptedResponse.base64iv,
+            base64ivReq: encryptedResponse.base64ivReq,
         }, null, 4)
     );
 
@@ -201,7 +201,7 @@ test('TOOL_Echo_JWSAESRSA', async ({ apiContext }) => {
         data: {
             encReqPayload: transitPayload.encReqPayload,
             encReqKey: transitPayload.encReqKey,
-            base64iv: transitPayload.base64iv,
+            base64ivReq: transitPayload.base64ivReq,
         },
     });
 
@@ -213,7 +213,7 @@ test('TOOL_Echo_JWSAESRSA', async ({ apiContext }) => {
             ...transitPayload,
             encResPayload: responseBody.encResPayload,
             encResKey: responseBody.encResKey,
-            base64iv: responseBody.base64iv,
+            base64ivRes: responseBody.base64ivRes,
         }, null, 4)
     );
 
@@ -231,7 +231,7 @@ test('CC_TOOL_006_JWSAESRSA_Decrypt', async ({ apiContext }) => {
         {
             encReqPayload: transitPayload.encResPayload,
             encReqKey: transitPayload.encResKey,
-            base64iv: transitPayload.base64iv,
+            base64ivReq: transitPayload.base64ivRes,
         },
         'application/json'
     );

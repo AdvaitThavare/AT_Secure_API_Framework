@@ -3,7 +3,7 @@ import type { APIRequestContext } from '@playwright/test';
 export type ClientJWSAESRSAEncryptionResult = {
     encReqPayload: string;
     encReqKey: string;
-    base64iv: string;
+    base64ivReq: string;
 };
 
 export async function encryptClientJWSAESRSA(
@@ -52,7 +52,7 @@ export async function decryptClientJWSAESRSA(
             data: {
                 encResPayload: encryptedResponse.encReqPayload,
                 encResKey: encryptedResponse.encReqKey,
-                base64iv: encryptedResponse.base64iv,
+                base64ivRes: encryptedResponse.base64ivReq,
             },
         }
     );

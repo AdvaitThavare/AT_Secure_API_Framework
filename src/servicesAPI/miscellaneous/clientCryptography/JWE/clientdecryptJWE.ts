@@ -1,14 +1,14 @@
- /**
-  * Encryption Type : JWE
-  * Standard        : JOSE
-  * Content Cipher  : AES-256-GCM
-  * Key Decryption  : RSA-OAEP-256
-  * RSA Padding     : OAEP
-  * OAEP Hash       : SHA-256
-  * IV              : 12 bytes
-  * Auth Tag        : 128 bits
-  * Signature       : None
-  */
+/**
+ * Encryption Type : JWE
+ * Standard        : JOSE
+ * Content Cipher  : AES-256-GCM
+ * Key Decryption  : RSA-OAEP-256
+ * RSA Padding     : OAEP
+ * OAEP Hash       : SHA-256
+ * IV              : 12 bytes
+ * Auth Tag        : 128 bits
+ * Signature       : None
+ */
 
 import { constants } from 'node:crypto';
 import { decryptAES_GCM } from '../../../../cryptography/cryptoAlgorithms/AES_Utility/AES_GCM';
@@ -23,8 +23,8 @@ const { clientPrivateKey } = getClientCryptoConfig();
 
 type ClientJWEDecryptRequest = {
   encResPayload: string;
-  encResKey?: string;
-  base64iv?: string;
+  encResKey?: string | null;
+  base64ivRes?: string | null;
 };
 
 export async function clientdecryptJWE(

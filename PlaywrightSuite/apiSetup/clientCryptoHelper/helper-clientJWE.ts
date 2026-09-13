@@ -3,7 +3,7 @@ import type { APIRequestContext } from '@playwright/test';
 export type ClientJWEEncryptionResult = {
     encReqPayload: string;
     encReqKey: string;
-    base64iv: string;
+    base64ivReq: string;
 };
 
 export async function encryptClientJWE(

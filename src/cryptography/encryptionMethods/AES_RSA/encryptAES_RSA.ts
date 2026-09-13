@@ -20,7 +20,7 @@ const { clientPublicKey } = getCryptoFunctionKeys();
 export type AESRSAResponse = {
     encResPayload: string;
     encResKey: string;
-    base64iv: string;
+    base64ivRes: string;
 };
 
 export async function encryptAES_RSA(
@@ -86,7 +86,7 @@ export async function encryptAES_RSA(
         responseBody: JSON.stringify({
             encResPayload: encodeBase64(new Uint8Array(encryptedBuffer)),
             encResKey: encodeBase64(encryptedKey),
-            base64iv: encodeBase64(iv),
+            base64ivRes: encodeBase64(iv),
         } satisfies AESRSAResponse),
     };
 }

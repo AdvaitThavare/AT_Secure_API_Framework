@@ -25,7 +25,7 @@ const { serverPublicKey, clientPrivateKey } = getClientCryptoConfig();
 type ClientJWSAESRSAResponse = {
     encReqPayload: string;
     encReqKey: string;
-    base64iv: string;
+    base64ivReq: string;
 };
 
 export async function clientencryptJWS_AES_RSA(
@@ -156,7 +156,7 @@ export async function clientencryptJWS_AES_RSA(
                 new Uint8Array(encryptedBuffer)
             ),
             encReqKey: encodeBase64(encryptedKey),
-            base64iv: encodeBase64(iv),
+            base64ivReq: encodeBase64(iv),
         } satisfies ClientJWSAESRSAResponse,
         responseHeaders: {
             'content-type': ['application/json'],

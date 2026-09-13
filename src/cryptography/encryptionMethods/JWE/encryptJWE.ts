@@ -19,6 +19,8 @@ const { clientPublicKey } = getCryptoFunctionKeys();
 
 export type JWEResponse = {
   encResPayload: string;
+  encResKey: string | null;
+  base64ivRes: string | null;
 };
 
 export async function encryptJWE(
@@ -126,6 +128,8 @@ export async function encryptJWE(
     error: null,
     responseBody: JSON.stringify({
       encResPayload: compactJWE,
+      encResKey: '',
+      base64ivRes: '',
     } satisfies JWEResponse),
   };
 }

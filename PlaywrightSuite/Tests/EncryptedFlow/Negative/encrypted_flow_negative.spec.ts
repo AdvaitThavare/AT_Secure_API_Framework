@@ -155,7 +155,7 @@ test('ENC_NEG_005_AESRSA_CorruptedCiphertext', async ({ apiContext }) => {
         data: {
             encReqPayload: corruptedPayload,
             encReqKey: encryptedRequest.encReqKey,
-            base64iv: encryptedRequest.base64iv,
+            base64ivReq: encryptedRequest.base64ivReq,
         },
     });
 
@@ -200,7 +200,7 @@ test('ENC_NEG_006_JWSAESRSA_CorruptedCiphertext', async ({ apiContext }) => {
         data: {
             encReqPayload: corruptedPayload,
             encReqKey: encryptedRequest.encReqKey,
-            base64iv: encryptedRequest.base64iv,
+            base64ivReq: encryptedRequest.base64ivReq,
         },
     });
 
@@ -245,7 +245,7 @@ test('ENC_NEG_010_AES_RSA_CEKDecryptionFailed', async ({ apiContext }) => {
         data: {
             encReqPayload: encryptedRequest.encReqPayload,
             encReqKey: invalidEncryptedKey,
-            base64iv: encryptedRequest.base64iv,
+            base64ivReq: encryptedRequest.base64ivReq,
         },
     });
 
@@ -290,7 +290,7 @@ test('ENC_NEG_011_AES_RSA_InvalidCEK', async ({ apiContext }) => {
         data: {
             encReqPayload: encryptedRequest.encReqPayload,
             encReqKey: invalidEncryptedKey,
-            base64iv: encryptedRequest.base64iv,
+            base64ivReq: encryptedRequest.base64ivReq,
         },
     });
 
@@ -335,7 +335,7 @@ test('ENC_NEG_012_JWSAESRSA_CEKDecryptionFailed', async ({ apiContext }) => {
         data: {
             encReqPayload: encryptedRequest.encReqPayload,
             encReqKey: invalidEncryptedKey,
-            base64iv: encryptedRequest.base64iv,
+            base64ivReq: encryptedRequest.base64ivReq,
         },
     });
 
@@ -380,7 +380,7 @@ test('ENC_NEG_013_JWSAESRSA_InvalidCEK', async ({ apiContext }) => {
         data: {
             encReqPayload: encryptedRequest.encReqPayload,
             encReqKey: invalidEncryptedKey,
-            base64iv: encryptedRequest.base64iv,
+            base64ivReq: encryptedRequest.base64ivReq,
         },
     });
 
@@ -622,7 +622,7 @@ test('ENC_NEG_017_JWSAESRSA_IncorrectIVlength', async ({ apiContext }) => {
 //         data: {
 //             encReqPayload: corruptedJWS,
 //             encReqKey: encryptedRequest.encReqKey,
-//             base64iv: encryptedRequest.base64iv,
+//             base64ivReq: encryptedRequest.base64ivReq,
 //         },
 //     });
 

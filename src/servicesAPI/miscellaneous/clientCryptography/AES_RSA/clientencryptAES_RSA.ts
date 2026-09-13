@@ -22,7 +22,7 @@ const { serverPublicKey } = getClientCryptoConfig();
 type ClientAESRSAResponse = {
     encReqPayload: string;
     encReqKey: string;
-    base64iv: string;
+    base64ivReq: string;
 };
 
 export async function clientencryptAES_RSA(
@@ -110,7 +110,7 @@ export async function clientencryptAES_RSA(
                 new Uint8Array(encryptedBuffer)
             ),
             encReqKey: encodeBase64(encryptedKey),
-            base64iv: encodeBase64(iv),
+            base64ivReq: encodeBase64(iv),
         } satisfies ClientAESRSAResponse,
         responseHeaders: {
             'content-type': ['application/json'],

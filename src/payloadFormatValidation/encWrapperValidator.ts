@@ -5,8 +5,8 @@ import type { AppError } from '../errors/errorHandler';
 const WRAPPER_REQUIREMENTS = {
     JWE: {
         payload: 'required',
-        key: 'forbidden',
-        base64iv: 'forbidden',
+        key: 'optional',
+        base64iv: 'optional',
     },
     AES_RSA: {
         payload: 'required',
@@ -42,7 +42,7 @@ export function encWrapperValidator(
     let wrapper: {
         encReqPayload?: unknown;
         encReqKey?: unknown;
-        base64iv?: unknown;
+        base64ivReq?: unknown;
     };
 
     try {
@@ -111,18 +111,7 @@ export function encWrapperValidator(
 
     // ===== Encryption Key =====
 
-    if (requirements.key === 'forbidden') {
-
-        if (wrapper.encReqKey !== undefined) {
-            return {
-                category: 'SERVER',
-                statusCode: 400,
-                errorCode: 'INVALID_ENC_REQ_KEY',
-                message: 'encReqKey is not allowed',
-            };
-        }
-
-    } else if (requirements.key === 'required') {
+    if (requirements.key === 'required') {
 
         if (
             typeof wrapper.encReqKey !== 'string' ||
@@ -139,34 +128,23 @@ export function encWrapperValidator(
 
     // ===== IV =====
 
-    if (requirements.base64iv === 'forbidden') {
-
-        if (wrapper.base64iv !== undefined) {
-            return {
-                category: 'SERVER',
-                statusCode: 400,
-                errorCode: 'INVALID_IV',
-                message: 'base64iv value is not allowed',
-            };
-        }
-
-    } else if (requirements.base64iv === 'required') {
+    if (requirements.base64iv === 'required') {
 
         if (
-            typeof wrapper.base64iv !== 'string' ||
-            !wrapper.base64iv
+            typeof wrapper.base64ivReq !== 'string' ||
+            !wrapper.base64ivReq
         ) {
             return {
                 category: 'SERVER',
                 statusCode: 400,
                 errorCode: 'MISSING_IV',
-                message: 'base64iv is missing',
+                message: 'base64ivReq is missing',
             };
         }
 
         // ===== IV Base64 Validation =====
 
-        if (!ALLOWED_IV_BASE64_LENGTHS.has(wrapper.base64iv.length)) {
+        if (!ALLOWED_IV_BASE64_LENGTHS.has(wrapper.base64ivReq.length)) {
             return {
                 category: 'SERVER',
                 statusCode: 400,
@@ -175,7 +153,7 @@ export function encWrapperValidator(
             };
         }
 
-        if (!isValidBase64(wrapper.base64iv)) {
+        if (!isValidBase64(wrapper.base64ivReq)) {
             return {
                 category: 'SERVER',
                 statusCode: 400,
@@ -186,8 +164,8 @@ export function encWrapperValidator(
 
         // ===== IV Decoded Length =====
 
-        const decodedIv = decodeBase64(wrapper.base64iv);
-            
+        const decodedIv = decodeBase64(wrapper.base64ivReq);
+
         if (
             decodedIv.length !== 12 &&
             decodedIv.length !== 16
@@ -205,11 +183,11 @@ export function encWrapperValidator(
 
     context.encryptedWrapper = {
         payload: wrapper.encReqPayload as string,
-        ...(wrapper.encReqKey !== undefined
-            ? { key: wrapper.encReqKey as string }
+        ...(typeof wrapper.encReqKey === 'string'
+            ? { key: wrapper.encReqKey }
             : {}),
-        ...(wrapper.base64iv !== undefined
-            ? { base64iv: wrapper.base64iv as string }
+        ...(typeof wrapper.base64ivReq === 'string'
+            ? { base64iv: wrapper.base64ivReq }
             : {}),
     };
 

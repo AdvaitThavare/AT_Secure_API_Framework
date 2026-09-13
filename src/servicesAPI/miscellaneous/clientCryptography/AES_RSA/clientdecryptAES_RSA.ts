@@ -23,7 +23,7 @@ const { clientPrivateKey } = getClientCryptoConfig();
 type ClientAESRSADecryptRequest = {
     encResPayload: string;
     encResKey: string;
-    base64iv: string;
+    base64ivRes: string;
 };
 
 export async function clientdecryptAES_RSA(
@@ -33,19 +33,19 @@ export async function clientdecryptAES_RSA(
     const {
         encResPayload,
         encResKey,
-        base64iv,
+        base64ivRes,
     } = context.payload as ClientAESRSADecryptRequest;
 
     if (
         typeof encResPayload !== 'string' ||
         typeof encResKey !== 'string' ||
-        typeof base64iv !== 'string'
+        typeof base64ivRes !== 'string'
     ) {
         return {
             statusCode: 400,
             payload: {
                 errorCode: 'INVALID_AES_RSA_REQUEST',
-                message: 'encResPayload, encResKey and base64iv must be strings',
+                message: 'encResPayload, encResKey and base64ivRes must be strings',
             },
             responseHeaders: {
                 'content-type': ['application/json'],
@@ -55,7 +55,7 @@ export async function clientdecryptAES_RSA(
 
     const encryptedPayload = decodeBase64(encResPayload);
     const encryptedKey = decodeBase64(encResKey);
-    const iv = decodeBase64(base64iv);
+    const iv = decodeBase64(base64ivRes);
 
     let aesKey: Buffer;
 
