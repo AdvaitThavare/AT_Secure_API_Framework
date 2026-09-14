@@ -41,9 +41,8 @@ export async function clientdecryptJWE(
         errorCode: 'INVALID_JWE_REQUEST',
         message: 'encResPayload must be a string',
       },
-      responseHeaders: {
-        'content-type': ['application/json'],
-      },
+      payloadContentType: 'application/json',
+      responseHeaders: {},
     };
   }
 
@@ -56,9 +55,8 @@ export async function clientdecryptJWE(
         errorCode: 'INVALID_JWE',
         message: 'Invalid JWE format',
       },
-      responseHeaders: {
-        'content-type': ['application/json'],
-      },
+      payloadContentType: 'application/json',
+      responseHeaders: {},
     };
   }
 
@@ -89,9 +87,8 @@ export async function clientdecryptJWE(
         errorCode: 'INVALID_JWE',
         message: 'Invalid JWE protected header',
       },
-      responseHeaders: {
-        'content-type': ['application/json'],
-      },
+      payloadContentType: 'application/json',
+      responseHeaders: {},
     };
   }
 
@@ -106,9 +103,8 @@ export async function clientdecryptJWE(
         errorCode: 'UNSUPPORTED_JWE_CONFIGURATION',
         message: 'Unsupported JWE configuration',
       },
-      responseHeaders: {
-        'content-type': ['application/json'],
-      },
+      payloadContentType: 'application/json',
+      responseHeaders: {},
     };
   }
 
@@ -128,9 +124,8 @@ export async function clientdecryptJWE(
         errorCode: 'INVALID_ENCRYPTED_KEY',
         message: 'Failed to decrypt content encryption key',
       },
-      responseHeaders: {
-        'content-type': ['application/json'],
-      },
+      payloadContentType: 'application/json',
+      responseHeaders: {},
     };
   }
 
@@ -160,9 +155,8 @@ export async function clientdecryptJWE(
         errorCode: 'INVALID_JWE_PAYLOAD',
         message: 'Failed to decrypt JWE payload',
       },
-      responseHeaders: {
-        'content-type': ['application/json'],
-      },
+      payloadContentType: 'application/json',
+      responseHeaders: {},
     };
   }
 
@@ -171,8 +165,7 @@ export async function clientdecryptJWE(
   return {
     statusCode: 200,
     payload: serializedResponse.payload,
-    responseHeaders: {
-      'content-type': [serializedResponse.contentType],
-    },
+    payloadContentType: serializedResponse.contentType,
+    responseHeaders: {},
   };
 }

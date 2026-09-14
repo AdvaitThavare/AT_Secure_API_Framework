@@ -49,9 +49,8 @@ export async function clientdecryptJWS_AES_RSA(
                 errorCode: 'INVALID_JWS_AES_RSA_REQUEST',
                 message: 'encResPayload, encResKey and base64ivRes must be strings',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -78,9 +77,8 @@ export async function clientdecryptJWS_AES_RSA(
                 errorCode: 'INVALID_ENCRYPTED_KEY',
                 message: 'Failed to decrypt content encryption key',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -93,9 +91,8 @@ export async function clientdecryptJWS_AES_RSA(
                 errorCode: 'INVALID_CEK',
                 message: 'Invalid content encryption key',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -116,9 +113,8 @@ export async function clientdecryptJWS_AES_RSA(
                 errorCode: 'INVALID_JWS_AES_RSA_PAYLOAD',
                 message: 'Failed to decrypt JWS_AES_RSA payload',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -135,9 +131,8 @@ export async function clientdecryptJWS_AES_RSA(
                 errorCode: 'INVALID_DECRYPTED_PAYLOAD',
                 message: 'Decrypted payload is not valid text',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -152,9 +147,8 @@ export async function clientdecryptJWS_AES_RSA(
                 errorCode: 'INVALID_JWS',
                 message: 'Invalid JWS format',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -184,9 +178,8 @@ export async function clientdecryptJWS_AES_RSA(
                 errorCode: 'INVALID_JWS',
                 message: 'Invalid JWS protected header',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -202,9 +195,8 @@ export async function clientdecryptJWS_AES_RSA(
                 errorCode: 'UNSUPPORTED_JWS_CONFIGURATION',
                 message: 'Unsupported JWS configuration',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -229,9 +221,8 @@ export async function clientdecryptJWS_AES_RSA(
                 errorCode: 'INVALID_JWS',
                 message: 'Failed to verify JWS',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -242,9 +233,8 @@ export async function clientdecryptJWS_AES_RSA(
                 errorCode: 'INVALID_JWS_SIGNATURE',
                 message: 'JWS signature verification failed',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -264,9 +254,8 @@ export async function clientdecryptJWS_AES_RSA(
                 errorCode: 'INVALID_DECRYPTED_PAYLOAD',
                 message: 'Decrypted payload is invalid',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -280,8 +269,7 @@ export async function clientdecryptJWS_AES_RSA(
     return {
         statusCode: 200,
         payload: serializedResponse.payload,
-        responseHeaders: {
-            'content-type': [serializedResponse.contentType],
-        },
+        payloadContentType: serializedResponse.contentType,
+        responseHeaders: {},
     };
 }

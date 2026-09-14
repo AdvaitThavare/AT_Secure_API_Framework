@@ -43,9 +43,8 @@ export async function clientencryptJWE(
                 errorCode: 'UNSUPPORTED_CRYPTO_REQUEST_CONTENT_TYPE',
                 message: 'Unsupported Content-Type for client cryptography service',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -79,9 +78,8 @@ export async function clientencryptJWE(
                 errorCode: 'JWE_ENCRYPTION_FAILED',
                 message: 'Failed to encrypt request payload',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -114,9 +112,8 @@ export async function clientencryptJWE(
                 errorCode: 'JWE_KEY_ENCRYPTION_FAILED',
                 message: 'Failed to encrypt content encryption key',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -135,8 +132,7 @@ export async function clientencryptJWE(
             encReqKey: '',
             base64ivReq: '',
         } satisfies ClientJWEResponse,
-        responseHeaders: {
-            'content-type': ['application/json'],
-        },
+        payloadContentType: 'application/json',
+        responseHeaders: {},
     };
 }

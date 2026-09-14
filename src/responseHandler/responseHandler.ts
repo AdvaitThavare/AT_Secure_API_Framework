@@ -11,6 +11,8 @@ export function sendResponse(
   const finalResponseHeaders = {
     ...serviceResponse.responseHeaders,
     ...responseHeaders,
+    'content-type': 'application/json',
+    'x-payload-content-type': serviceResponse.payloadContentType,
   };
 
   res.writeHead(

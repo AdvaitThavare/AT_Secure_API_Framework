@@ -1244,8 +1244,6 @@ Step 5 — Realistic APIs + Persistence
 Step 6 — Multiple Client-Certificate Identity Mapping
              Planned
 
-
-
 *******************************Discussed Points Section*******************************
 
 Step-2 ImplementationDetails:
@@ -1544,3 +1542,6 @@ The Service Dispatcher uses the same definition to determine:
 ```
 
 This provides a single source of truth, avoids configuration drift, supports future database persistence, and allows API-level flow restrictions to be enforced consistently without coupling the generic request parser/validator or the individual services to routing policy.
+
+
+**Response Content-Type Architecture:** The framework uses a standardized JSON response envelope for all response media types. API services return the raw service payload together with `payloadContentType`, which identifies the payload's actual media type. The response layer serializes the service payload as required, embeds it in `responsePayload`, and includes `responseContentType` in the common JSON envelope. The framework always returns the outer HTTP response with `Content-Type: application/json` and separately exposes the actual service payload media type through `x-payload-content-type`. `payloadContentType` is the single source of truth for both values. This design applies to plain and encrypted flows; encrypted strategies encrypt the already-prepared common envelope without changing their existing encryption wrapper contracts. Request-side `Content-Type` handling remains user-defined and unchanged.

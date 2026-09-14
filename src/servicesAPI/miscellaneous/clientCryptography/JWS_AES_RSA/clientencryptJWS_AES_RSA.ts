@@ -44,9 +44,8 @@ export async function clientencryptJWS_AES_RSA(
                 errorCode: 'UNSUPPORTED_CRYPTO_REQUEST_CONTENT_TYPE',
                 message: 'Unsupported Content-Type for client cryptography service',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -87,9 +86,8 @@ export async function clientencryptJWS_AES_RSA(
                 errorCode: 'JWS_AES_RSA_SIGNING_FAILED',
                 message: 'Failed to sign request payload',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -118,9 +116,8 @@ export async function clientencryptJWS_AES_RSA(
                 errorCode: 'JWS_AES_RSA_ENCRYPTION_FAILED',
                 message: 'Failed to encrypt request payload',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -141,9 +138,8 @@ export async function clientencryptJWS_AES_RSA(
                 errorCode: 'JWS_AES_RSA_KEY_ENCRYPTION_FAILED',
                 message: 'Failed to encrypt content encryption key',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -158,8 +154,7 @@ export async function clientencryptJWS_AES_RSA(
             encReqKey: encodeBase64(encryptedKey),
             base64ivReq: encodeBase64(iv),
         } satisfies ClientJWSAESRSAResponse,
-        responseHeaders: {
-            'content-type': ['application/json'],
-        },
+        payloadContentType: 'application/json',
+        responseHeaders: {},
     };
 }

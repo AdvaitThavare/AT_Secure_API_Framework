@@ -8,9 +8,9 @@ import { payloadTypeIdentifier } from './requestRouting/payloadTypeIdentifier';
 import { encWrapperValidator } from './payloadFormatValidation/encWrapperValidator';
 import { decryptPayload, encryptPayload } from './cryptography/cryptographyLayer';
 import { sendResponse } from './responseHandler/responseHandler';
-import { responseSerializer } from './responseHandler/responseSerialization/responseSerializer';
 import { requestHandler } from './requestHandler/requestHandler';
 import { createServiceContext } from './context/requestContext';
+import { responseConstructor } from './responseHandler/responseConstructor';
 
 
 const server = createHTTPSServer(
@@ -74,8 +74,7 @@ const server = createHTTPSServer(
         serviceContext
       );
 
-    let responseBody =
-      responseSerializer(serviceResponse);
+    let responseBody = responseConstructor(serviceResponse);
 
     if (context.payloadType === 'ENCRYPTED') {
       const encryptResult = await encryptPayload(

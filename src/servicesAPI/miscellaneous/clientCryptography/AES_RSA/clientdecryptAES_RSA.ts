@@ -47,9 +47,8 @@ export async function clientdecryptAES_RSA(
                 errorCode: 'INVALID_AES_RSA_REQUEST',
                 message: 'encResPayload, encResKey and base64ivRes must be strings',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -72,9 +71,8 @@ export async function clientdecryptAES_RSA(
                 errorCode: 'INVALID_ENCRYPTED_KEY',
                 message: 'Failed to decrypt content encryption key',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -87,9 +85,8 @@ export async function clientdecryptAES_RSA(
                 errorCode: 'INVALID_CEK',
                 message: 'Invalid content encryption key',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -108,9 +105,8 @@ export async function clientdecryptAES_RSA(
                 errorCode: 'INVALID_AES_RSA_PAYLOAD',
                 message: 'Failed to decrypt AES_RSA payload',
             },
-            responseHeaders: {
-                'content-type': ['application/json'],
-            },
+            payloadContentType: 'application/json',
+            responseHeaders: {},
         };
     }
 
@@ -122,8 +118,7 @@ export async function clientdecryptAES_RSA(
     return {
         statusCode: 200,
         payload: serializedResponse.payload,
-        responseHeaders: {
-            'content-type': [serializedResponse.contentType],
-        },
+        payloadContentType: serializedResponse.contentType,
+        responseHeaders: {},
     };
 }
