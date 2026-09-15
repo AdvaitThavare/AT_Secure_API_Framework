@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test';
 import { test } from '../../../apiSetup/apiContext';
-import { decryptClientJWE, encryptClientJWE } from '../../../apiSetup/clientCryptoHelper/helper-clientJWE';
-import { decryptClientAESRSA, encryptClientAESRSA } from '../../../apiSetup/clientCryptoHelper/helper-clientAESRSA';
-import { decryptClientJWSAESRSA, encryptClientJWSAESRSA } from '../../../apiSetup/clientCryptoHelper/helper-clientJWSAESRSA';
+import { encryptClientJWE } from '../../../apiSetup/clientCryptoHelper/helper-clientJWE';
+import { encryptClientAESRSA } from '../../../apiSetup/clientCryptoHelper/helper-clientAESRSA';
+import { encryptClientJWSAESRSA } from '../../../apiSetup/clientCryptoHelper/helper-clientJWSAESRSA';
 
 test('ENC_NEG_001_JWE_InvalidEncryptedWrapper', async ({ apiContext }) => {
     const response = await apiContext.post('/echo', {
@@ -94,7 +94,7 @@ test('ENC_NEG_004_JWE_CorruptedCiphertext', async ({ apiContext }) => {
         contentType
     );
 
-    const jweParts = encryptedRequest.encReqPayload.split('.');
+    const jweParts = encryptedRequest.responsePayload.encReqPayload.split('.');
 
     jweParts[3] =
         jweParts[3].slice(0, -1) +
@@ -154,8 +154,8 @@ test('ENC_NEG_005_AESRSA_CorruptedCiphertext', async ({ apiContext }) => {
         },
         data: {
             encReqPayload: corruptedPayload,
-            encReqKey: encryptedRequest.encReqKey,
-            base64ivReq: encryptedRequest.base64ivReq,
+            encReqKey: encryptedRequest.responsePayload.encReqKey,
+            base64ivReq: encryptedRequest.responsePayload.base64ivReq,
         },
     });
 
@@ -199,8 +199,8 @@ test('ENC_NEG_006_JWSAESRSA_CorruptedCiphertext', async ({ apiContext }) => {
         },
         data: {
             encReqPayload: corruptedPayload,
-            encReqKey: encryptedRequest.encReqKey,
-            base64ivReq: encryptedRequest.base64ivReq,
+            encReqKey: encryptedRequest.responsePayload.encReqKey,
+            base64ivReq: encryptedRequest.responsePayload.base64ivReq,
         },
     });
 
@@ -233,7 +233,7 @@ test('ENC_NEG_010_AES_RSA_CEKDecryptionFailed', async ({ apiContext }) => {
         contentType
     );
 
-    const invalidEncryptedKey = 'A' + encryptedRequest.encReqKey;
+    const invalidEncryptedKey = 'A' + encryptedRequest.responsePayload.encReqKey;
 
     const response = await apiContext.post('/echo', {
         headers: {
@@ -243,9 +243,9 @@ test('ENC_NEG_010_AES_RSA_CEKDecryptionFailed', async ({ apiContext }) => {
             'x-enc-wrapper-content-type': 'application/json',
         },
         data: {
-            encReqPayload: encryptedRequest.encReqPayload,
+            encReqPayload: encryptedRequest.responsePayload.encReqPayload,
             encReqKey: invalidEncryptedKey,
-            base64ivReq: encryptedRequest.base64ivReq,
+            base64ivReq: encryptedRequest.responsePayload.base64ivReq,
         },
     });
 
@@ -288,9 +288,9 @@ test('ENC_NEG_011_AES_RSA_InvalidCEK', async ({ apiContext }) => {
             'x-enc-wrapper-content-type': 'application/json',
         },
         data: {
-            encReqPayload: encryptedRequest.encReqPayload,
+            encReqPayload: encryptedRequest.responsePayload.encReqPayload,
             encReqKey: invalidEncryptedKey,
-            base64ivReq: encryptedRequest.base64ivReq,
+            base64ivReq: encryptedRequest.responsePayload.base64ivReq,
         },
     });
 
@@ -323,7 +323,7 @@ test('ENC_NEG_012_JWSAESRSA_CEKDecryptionFailed', async ({ apiContext }) => {
         contentType
     );
 
-    const invalidEncryptedKey = 'A' + encryptedRequest.encReqKey;
+    const invalidEncryptedKey = 'A' + encryptedRequest.responsePayload.encReqKey;
 
     const response = await apiContext.post('/echo', {
         headers: {
@@ -333,9 +333,9 @@ test('ENC_NEG_012_JWSAESRSA_CEKDecryptionFailed', async ({ apiContext }) => {
             'x-enc-wrapper-content-type': 'application/json',
         },
         data: {
-            encReqPayload: encryptedRequest.encReqPayload,
+            encReqPayload: encryptedRequest.responsePayload.encReqPayload,
             encReqKey: invalidEncryptedKey,
-            base64ivReq: encryptedRequest.base64ivReq,
+            base64ivReq: encryptedRequest.responsePayload.base64ivReq,
         },
     });
 
@@ -378,9 +378,9 @@ test('ENC_NEG_013_JWSAESRSA_InvalidCEK', async ({ apiContext }) => {
             'x-enc-wrapper-content-type': 'application/json',
         },
         data: {
-            encReqPayload: encryptedRequest.encReqPayload,
+            encReqPayload: encryptedRequest.responsePayload.encReqPayload,
             encReqKey: invalidEncryptedKey,
-            base64ivReq: encryptedRequest.base64ivReq,
+            base64ivReq: encryptedRequest.responsePayload.base64ivReq,
         },
     });
 
@@ -423,9 +423,9 @@ test('ENC_NEG_014_AES_RSA_InvalidIV', async ({ apiContext }) => {
             'x-enc-wrapper-content-type': 'application/json',
         },
         data: {
-            encReqPayload: encryptedRequest.encReqPayload,
-            encReqKey: encryptedRequest.encReqKey,
-            base64iv: invalidbase64iv,
+            encReqPayload: encryptedRequest.responsePayload.encReqPayload,
+            encReqKey: encryptedRequest.responsePayload.encReqKey,
+            base64ivReq: invalidbase64iv,
         },
     });
 
@@ -468,9 +468,9 @@ test('ENC_NEG_015_JWSAESRSA_InvalidIV', async ({ apiContext }) => {
             'x-enc-wrapper-content-type': 'application/json',
         },
         data: {
-            encReqPayload: encryptedRequest.encReqPayload,
-            encReqKey: encryptedRequest.encReqKey,
-            base64iv: invalidbase64iv,
+            encReqPayload: encryptedRequest.responsePayload.encReqPayload,
+            encReqKey: encryptedRequest.responsePayload.encReqKey,
+            base64ivReq: invalidbase64iv,
         },
     });
 
@@ -513,9 +513,9 @@ test('ENC_NEG_016_AES_RSA_IncorrectIVlength', async ({ apiContext }) => {
             'x-enc-wrapper-content-type': 'application/json',
         },
         data: {
-            encReqPayload: encryptedRequest.encReqPayload,
-            encReqKey: encryptedRequest.encReqKey,
-            base64iv: invalidbase64iv,
+            encReqPayload: encryptedRequest.responsePayload.encReqPayload,
+            encReqKey: encryptedRequest.responsePayload.encReqKey,
+            base64ivReq: invalidbase64iv,
         },
     });
 
@@ -558,9 +558,9 @@ test('ENC_NEG_017_JWSAESRSA_IncorrectIVlength', async ({ apiContext }) => {
             'x-enc-wrapper-content-type': 'application/json',
         },
         data: {
-            encReqPayload: encryptedRequest.encReqPayload,
-            encReqKey: encryptedRequest.encReqKey,
-            base64iv: invalidbase64iv,
+            encReqPayload: encryptedRequest.responsePayload.encReqPayload,
+            encReqKey: encryptedRequest.responsePayload.encReqKey,
+            base64ivReq: invalidbase64iv,
         },
     });
 
@@ -594,7 +594,7 @@ test('ENC_NEG_017_JWSAESRSA_IncorrectIVlength', async ({ apiContext }) => {
 //     );
 
 //     const jwsParts = Buffer.from(
-//         encryptedRequest.encReqPayload,
+//         encryptedRequest.responsePayload.encReqPayload,
 //         'base64'
 //     ).toString('utf-8').split('.');
 
@@ -621,8 +621,8 @@ test('ENC_NEG_017_JWSAESRSA_IncorrectIVlength', async ({ apiContext }) => {
 //         },
 //         data: {
 //             encReqPayload: corruptedJWS,
-//             encReqKey: encryptedRequest.encReqKey,
-//             base64ivReq: encryptedRequest.base64ivReq,
+//             encReqKey: encryptedRequest.responsePayload.encReqKey,
+//             base64ivReq: encryptedRequest.responsePayload.base64ivReq,
 //         },
 //     });
 

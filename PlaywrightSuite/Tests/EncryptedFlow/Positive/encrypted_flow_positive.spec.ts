@@ -28,7 +28,7 @@ test('ENC_POS_001_JWEEchoRoundTrip_JSON', async ({ apiContext }) => {
             'x-enc-wrapper-content-type': 'application/json',
         },
         data: {
-            encReqPayload: encryptedRequest.encReqPayload,
+            encReqPayload: encryptedRequest.responsePayload.encReqPayload,
         },
     });
 
@@ -41,15 +41,11 @@ test('ENC_POS_001_JWEEchoRoundTrip_JSON', async ({ apiContext }) => {
     const decryptedResponse = await decryptClientJWE(
         apiContext,
         responseBody.encResPayload,
-        contentType
-    ) as {
-        responsePayload: typeof payload;
-        responseStatus: {
-            success: boolean;
-        };
-    };
+    )
+    // console.log(decryptedResponse)
 
     expect(decryptedResponse.responsePayload).toEqual(payload);
+    expect(decryptedResponse.responseContentType).toEqual(contentType)
     expect(decryptedResponse.responseStatus).toEqual({
         "success": true,
     });
@@ -78,9 +74,9 @@ test('ENC_POS_002_AESRSAEchoRoundTrip_JSON', async ({ apiContext }) => {
             'x-enc-wrapper-content-type': 'application/json',
         },
         data: {
-            encReqPayload: encryptedRequest.encReqPayload,
-            encReqKey: encryptedRequest.encReqKey,
-            base64ivReq: encryptedRequest.base64ivReq,
+            encReqPayload: encryptedRequest.responsePayload.encReqPayload,
+            encReqKey: encryptedRequest.responsePayload.encReqKey,
+            base64ivReq: encryptedRequest.responsePayload.base64ivReq,
         },
     });
 
@@ -95,17 +91,13 @@ test('ENC_POS_002_AESRSAEchoRoundTrip_JSON', async ({ apiContext }) => {
         {
             encReqPayload: responseBody.encResPayload,
             encReqKey: responseBody.encResKey,
-            base64ivReq: responseBody.base64iv,
+            base64ivReq: responseBody.base64ivRes,
         },
-        contentType
-    ) as {
-        responsePayload: typeof payload;
-        responseStatus: {
-            success: boolean;
-        };
-    };
+    )
+    // console.log(decryptedResponse)
 
     expect(decryptedResponse.responsePayload).toEqual(payload);
+    expect(decryptedResponse.responseContentType).toEqual(contentType)
     expect(decryptedResponse.responseStatus).toEqual({
         success: true,
     });
@@ -134,9 +126,9 @@ test('ENC_POS_003_JWSAESRSAEchoRoundTrip_JSON', async ({ apiContext }) => {
             'x-enc-wrapper-content-type': 'application/json',
         },
         data: {
-            encReqPayload: encryptedRequest.encReqPayload,
-            encReqKey: encryptedRequest.encReqKey,
-            base64iv: encryptedRequest.base64ivReq,
+            encReqPayload: encryptedRequest.responsePayload.encReqPayload,
+            encReqKey: encryptedRequest.responsePayload.encReqKey,
+            base64ivReq: encryptedRequest.responsePayload.base64ivReq,
         },
     });
 
@@ -151,17 +143,13 @@ test('ENC_POS_003_JWSAESRSAEchoRoundTrip_JSON', async ({ apiContext }) => {
         {
             encReqPayload: responseBody.encResPayload,
             encReqKey: responseBody.encResKey,
-            base64ivReq: responseBody.base64iv,
+            base64ivReq: responseBody.base64ivRes,
         },
-        contentType
-    ) as {
-        responsePayload: typeof payload;
-        responseStatus: {
-            success: boolean;
-        };
-    };
+    )
+    // console.log(decryptedResponse)
 
     expect(decryptedResponse.responsePayload).toEqual(payload);
+    expect(decryptedResponse.responseContentType).toEqual(contentType)
     expect(decryptedResponse.responseStatus).toEqual({
         success: true,
     });
@@ -186,12 +174,12 @@ test('ENC_POS_004_JWEEchoRoundTrip_Text', async ({ apiContext }) => {
             'x-enc-wrapper-content-type': 'application/json',
         },
         data: {
-            encReqPayload: encryptedRequest.encReqPayload,
+            encReqPayload: encryptedRequest.responsePayload.encReqPayload,
         },
     });
 
     expect(response.status()).toBe(200);
-    expect(response.headers()['content-type']).toContain(contentType);
+    expect(response.headers()['content-type']).toContain('application/json');
 
     const responseBody = await response.json();
     // console.log(responseBody)
@@ -199,12 +187,14 @@ test('ENC_POS_004_JWEEchoRoundTrip_Text', async ({ apiContext }) => {
     const decryptedResponse = await decryptClientJWE(
         apiContext,
         responseBody.encResPayload,
-        contentType
-    );
+    )
+    // console.log(decryptedResponse)
 
-    expect(decryptedResponse).toBe(
-        `success:true\nresponsePayload:${payload}`
-    );
+    expect(decryptedResponse.responsePayload).toEqual(payload);
+    expect(decryptedResponse.responseContentType).toEqual(contentType)
+    expect(decryptedResponse.responseStatus).toEqual({
+        "success": true,
+    });
 });
 
 test('ENC_POS_005_AESRSAEchoRoundTrip_Text', async ({ apiContext }) => {
@@ -226,14 +216,14 @@ test('ENC_POS_005_AESRSAEchoRoundTrip_Text', async ({ apiContext }) => {
             'x-enc-wrapper-content-type': 'application/json',
         },
         data: {
-            encReqPayload: encryptedRequest.encReqPayload,
-            encReqKey: encryptedRequest.encReqKey,
-            base64iv: encryptedRequest.base64ivReq,
+            encReqPayload: encryptedRequest.responsePayload.encReqPayload,
+            encReqKey: encryptedRequest.responsePayload.encReqKey,
+            base64ivReq: encryptedRequest.responsePayload.base64ivReq,
         },
     });
 
     expect(response.status()).toBe(200);
-    expect(response.headers()['content-type']).toContain(contentType);
+    expect(response.headers()['content-type']).toContain('application/json');
 
     const responseBody = await response.json();
     // console.log(responseBody)
@@ -243,14 +233,16 @@ test('ENC_POS_005_AESRSAEchoRoundTrip_Text', async ({ apiContext }) => {
         {
             encReqPayload: responseBody.encResPayload,
             encReqKey: responseBody.encResKey,
-            base64ivReq: responseBody.base64iv,
+            base64ivReq: responseBody.base64ivRes,
         },
-        contentType
-    );
+    )
+    // console.log(decryptedResponse)
 
-    expect(decryptedResponse).toBe(
-        `success:true\nresponsePayload:${payload}`
-    );
+    expect(decryptedResponse.responsePayload).toEqual(payload);
+    expect(decryptedResponse.responseContentType).toEqual(contentType)
+    expect(decryptedResponse.responseStatus).toEqual({
+        success: true,
+    });
 });
 
 test('ENC_POS_006_JWSAESRSAEchoRoundTrip_Text', async ({ apiContext }) => {
@@ -272,14 +264,14 @@ test('ENC_POS_006_JWSAESRSAEchoRoundTrip_Text', async ({ apiContext }) => {
             'x-enc-wrapper-content-type': 'application/json',
         },
         data: {
-            encReqPayload: encryptedRequest.encReqPayload,
-            encReqKey: encryptedRequest.encReqKey,
-            base64iv: encryptedRequest.base64ivReq,
+            encReqPayload: encryptedRequest.responsePayload.encReqPayload,
+            encReqKey: encryptedRequest.responsePayload.encReqKey,
+            base64ivReq: encryptedRequest.responsePayload.base64ivReq,
         },
     });
 
     expect(response.status()).toBe(200);
-    expect(response.headers()['content-type']).toContain(contentType);
+    expect(response.headers()['content-type']).toContain('application/json');
 
     const responseBody = await response.json();
     // console.log(responseBody)
@@ -289,13 +281,15 @@ test('ENC_POS_006_JWSAESRSAEchoRoundTrip_Text', async ({ apiContext }) => {
         {
             encReqPayload: responseBody.encResPayload,
             encReqKey: responseBody.encResKey,
-            base64ivReq: responseBody.base64iv,
+            base64ivReq: responseBody.base64ivRes,
         },
-        contentType
-    );
+    )
+    // console.log(decryptedResponse)
 
-    expect(decryptedResponse).toBe(
-        `success:true\nresponsePayload:${payload}`
-    );
+    expect(decryptedResponse.responsePayload).toEqual(payload);
+    expect(decryptedResponse.responseContentType).toEqual(contentType)
+    expect(decryptedResponse.responseStatus).toEqual({
+        success: true,
+    });
 });
 

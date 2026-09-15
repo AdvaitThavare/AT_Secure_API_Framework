@@ -1,4 +1,5 @@
 import type { APIRequestContext } from '@playwright/test';
+import { ClientCryptoResponse } from './clientCryptoTypes';
 
 export type ClientAESRSAEncryptionResult = {
     encReqPayload: string;
@@ -6,11 +7,14 @@ export type ClientAESRSAEncryptionResult = {
     base64ivReq: string;
 };
 
+export type ClientAESRSAResponse =
+    ClientCryptoResponse<ClientAESRSAEncryptionResult>;
+
 export async function encryptClientAESRSA(
     apiContext: APIRequestContext,
     payload: unknown,
     contentType: string
-): Promise<ClientAESRSAEncryptionResult> {
+): Promise<ClientAESRSAResponse> {
 
     const response = await apiContext.post(
         '/clientCryptography/encryptAES_RSA',
@@ -31,14 +35,13 @@ export async function encryptClientAESRSA(
         );
     }
 
-    return await response.json() as ClientAESRSAEncryptionResult;
+    return await response.json() as ClientAESRSAResponse;
 }
 
 export async function decryptClientAESRSA(
     apiContext: APIRequestContext,
-    encryptedResponse: ClientAESRSAEncryptionResult,
-    contentType: string
-): Promise<unknown> {
+    encryptedResponse: ClientAESRSAEncryptionResult
+): Promise<ClientAESRSAResponse> {
 
     const response = await apiContext.post(
         '/clientCryptography/decryptAES_RSA',
@@ -63,9 +66,5 @@ export async function decryptClientAESRSA(
         );
     }
 
-    if (contentType.includes('application/json')) {
-        return await response.json();
-    }
-
-    return await response.text();
+    return await response.json() as ClientAESRSAResponse;
 }

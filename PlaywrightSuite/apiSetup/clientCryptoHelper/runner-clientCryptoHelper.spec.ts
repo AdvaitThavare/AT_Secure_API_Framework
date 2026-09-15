@@ -26,12 +26,12 @@ test('CC_TOOL_001_JWE_Encrypt', async ({ apiContext }) => {
     fs.writeFileSync(
         transitPayloadPath,
         JSON.stringify({
-            encReqPayload: encryptedResponse.encReqPayload,
+            encReqPayload: encryptedResponse.responsePayload.encReqPayload,
         }, null, 4)
     );
 
     console.log('\n===== JWE Encryption Result =====');
-    console.log(encryptedResponse.encReqPayload);
+    console.log(encryptedResponse);
 });
 
 test('TOOL_Echo_JWE', async ({ apiContext }) => {
@@ -62,7 +62,7 @@ test('TOOL_Echo_JWE', async ({ apiContext }) => {
     );
 
     console.log('\n===== Echo JWE Response =====');
-    console.log(responseBody.encResPayload);
+    console.log(responseBody);
 });
 
 test('CC_TOOL_002_JWE_Decrypt', async ({ apiContext }) => {
@@ -73,7 +73,6 @@ test('CC_TOOL_002_JWE_Decrypt', async ({ apiContext }) => {
     const decryptedResponse = await decryptClientJWE(
         apiContext,
         transitPayload.encResPayload,
-        'application/json'
     );
 
     console.log('\n===== JWE Decryption Result =====');
@@ -96,9 +95,9 @@ test('CC_TOOL_003_AESRSA_Encrypt', async ({ apiContext }) => {
     fs.writeFileSync(
         transitPayloadPath,
         JSON.stringify({
-            encReqPayload: encryptedResponse.encReqPayload,
-            encReqKey: encryptedResponse.encReqKey,
-            base64ivReq: encryptedResponse.base64ivReq,
+            encReqPayload: encryptedResponse.responsePayload.encReqPayload,
+            encReqKey: encryptedResponse.responsePayload.encReqKey,
+            base64ivReq: encryptedResponse.responsePayload.base64ivReq,
         }, null, 4)
     );
 
@@ -153,7 +152,6 @@ test('CC_TOOL_004_AESRSA_Decrypt', async ({ apiContext }) => {
             encReqKey: transitPayload.encResKey,
             base64ivReq: transitPayload.base64ivRes,
         },
-        'application/json'
     );
 
     console.log('\n===== AES_RSA Decryption Result =====');
@@ -176,9 +174,9 @@ test('CC_TOOL_005_JWSAESRSA_Encrypt', async ({ apiContext }) => {
     fs.writeFileSync(
         transitPayloadPath,
         JSON.stringify({
-            encReqPayload: encryptedResponse.encReqPayload,
-            encReqKey: encryptedResponse.encReqKey,
-            base64ivReq: encryptedResponse.base64ivReq,
+            encReqPayload: encryptedResponse.responsePayload.encReqPayload,
+            encReqKey: encryptedResponse.responsePayload.encReqKey,
+            base64ivReq: encryptedResponse.responsePayload.base64ivReq,
         }, null, 4)
     );
 
@@ -233,7 +231,6 @@ test('CC_TOOL_006_JWSAESRSA_Decrypt', async ({ apiContext }) => {
             encReqKey: transitPayload.encResKey,
             base64ivReq: transitPayload.base64ivRes,
         },
-        'application/json'
     );
 
     console.log('\n===== JWS_AES_RSA Decryption Result =====');

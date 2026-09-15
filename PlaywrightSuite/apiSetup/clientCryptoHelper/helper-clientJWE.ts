@@ -1,4 +1,5 @@
 import type { APIRequestContext } from '@playwright/test';
+import { ClientCryptoResponse } from './clientCryptoTypes';
 
 export type ClientJWEEncryptionResult = {
     encReqPayload: string;
@@ -6,11 +7,14 @@ export type ClientJWEEncryptionResult = {
     base64ivReq: string;
 };
 
+export type ClientJWEResponse =
+    ClientCryptoResponse<ClientJWEEncryptionResult>;
+
 export async function encryptClientJWE(
     apiContext: APIRequestContext,
     payload: unknown,
     contentType: string
-): Promise<ClientJWEEncryptionResult> {
+): Promise<ClientJWEResponse> {
 
     const response = await apiContext.post(
         '/clientCryptography/encryptJWE',
@@ -31,14 +35,13 @@ export async function encryptClientJWE(
         );
     }
 
-    return await response.json() as ClientJWEEncryptionResult;
+    return await response.json() as ClientJWEResponse;
 }
 
 export async function decryptClientJWE(
     apiContext: APIRequestContext,
-    encryptedResponse: string,
-    contentType: string
-): Promise<unknown> {
+    encryptedResponse: string
+): Promise<ClientJWEResponse> {
 
     const response = await apiContext.post(
         '/clientCryptography/decryptJWE',
@@ -61,9 +64,5 @@ export async function decryptClientJWE(
         );
     }
 
-    if (contentType.includes('application/json')) {
-        return await response.json();
-    }
-
-    return await response.text();
+    return await response.json() as ClientJWEResponse;
 }

@@ -1,4 +1,5 @@
 import type { APIRequestContext } from '@playwright/test';
+import { ClientCryptoResponse } from './clientCryptoTypes';
 
 export type ClientJWSAESRSAEncryptionResult = {
     encReqPayload: string;
@@ -6,11 +7,14 @@ export type ClientJWSAESRSAEncryptionResult = {
     base64ivReq: string;
 };
 
+export type ClientJWSAESRSAResponse =
+    ClientCryptoResponse<ClientJWSAESRSAEncryptionResult>;
+
 export async function encryptClientJWSAESRSA(
     apiContext: APIRequestContext,
     payload: unknown,
     contentType: string
-): Promise<ClientJWSAESRSAEncryptionResult> {
+): Promise<ClientJWSAESRSAResponse> {
 
     const response = await apiContext.post(
         '/clientCryptography/encryptJWS_AES_RSA',
@@ -31,14 +35,13 @@ export async function encryptClientJWSAESRSA(
         );
     }
 
-    return await response.json() as ClientJWSAESRSAEncryptionResult;
+    return await response.json() as ClientJWSAESRSAResponse;
 }
 
 export async function decryptClientJWSAESRSA(
     apiContext: APIRequestContext,
-    encryptedResponse: ClientJWSAESRSAEncryptionResult,
-    contentType: string
-): Promise<unknown> {
+    encryptedResponse: ClientJWSAESRSAEncryptionResult
+): Promise<ClientJWSAESRSAResponse> {
 
     const response = await apiContext.post(
         '/clientCryptography/decryptJWS_AES_RSA',
@@ -63,9 +66,5 @@ export async function decryptClientJWSAESRSA(
         );
     }
 
-    if (contentType.includes('application/json')) {
-        return await response.json();
-    }
-
-    return await response.text();
+    return await response.json() as ClientJWSAESRSAResponse;
 }
