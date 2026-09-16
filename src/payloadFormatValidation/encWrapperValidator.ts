@@ -20,8 +20,6 @@ const WRAPPER_REQUIREMENTS = {
     },
 } as const;
 
-const ALLOWED_IV_BASE64_LENGTHS = new Set([16, 24]);
-
 function isValidBase64(value: string): boolean {
     try {
         const decoded = decodeBase64(value);
@@ -144,37 +142,23 @@ export function encWrapperValidator(
 
         // ===== IV Base64 Validation =====
 
-        if (!ALLOWED_IV_BASE64_LENGTHS.has(wrapper.base64ivReq.length)) {
+        if (wrapper.base64ivReq.length !== 24) {
             return {
                 category: 'SERVER',
                 statusCode: 400,
                 errorCode: 'INVALID_IV',
-                message: 'Invalid IV format',
+                message: 'Invalid IV length. Expected a 16-byte IV encoded as 24 characters Base64 String',
             };
         }
-
-        if (!isValidBase64(wrapper.base64ivReq)) {
-            return {
-                category: 'SERVER',
-                statusCode: 400,
-                errorCode: 'INVALID_IV',
-                message: 'Invalid IV format',
-            };
-        }
-
-        // ===== IV Decoded Length =====
 
         const decodedIv = decodeBase64(wrapper.base64ivReq);
 
-        if (
-            decodedIv.length !== 12 &&
-            decodedIv.length !== 16
-        ) {
+        if (encodeBase64(decodedIv) !== wrapper.base64ivReq) {
             return {
                 category: 'SERVER',
                 statusCode: 400,
                 errorCode: 'INVALID_IV',
-                message: 'Invalid IV length',
+                message: 'Invalid IV format. Expected a standard Base64-encoded string',
             };
         }
     }

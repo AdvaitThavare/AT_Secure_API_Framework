@@ -413,7 +413,7 @@ test('ENC_NEG_014_AES_RSA_InvalidIV', async ({ apiContext }) => {
         contentType
     );
 
-    const invalidbase64iv = 'invalidIV';
+    const invalidbase64iv = 'asdfghjklasdfghjklasdf==';
 
     const response = await apiContext.post('/echo', {
         headers: {
@@ -439,7 +439,7 @@ test('ENC_NEG_014_AES_RSA_InvalidIV', async ({ apiContext }) => {
         category: 'SERVER',
         statusCode: 400,
         errorCode: 'INVALID_IV',
-        message: 'Invalid IV format',
+        message: 'Invalid IV format. Expected a standard Base64-encoded string',
     });
 });
 
@@ -458,7 +458,7 @@ test('ENC_NEG_015_JWSAESRSA_InvalidIV', async ({ apiContext }) => {
         contentType
     );
 
-    const invalidbase64iv = 'invalidIV';
+    const invalidbase64iv = 'asdfghjklasdfghjklasdf==';
 
     const response = await apiContext.post('/echo', {
         headers: {
@@ -484,7 +484,7 @@ test('ENC_NEG_015_JWSAESRSA_InvalidIV', async ({ apiContext }) => {
         category: 'SERVER',
         statusCode: 400,
         errorCode: 'INVALID_IV',
-        message: 'Invalid IV format',
+        message: 'Invalid IV format. Expected a standard Base64-encoded string',
     });
 });
 
@@ -529,7 +529,7 @@ test('ENC_NEG_016_AES_RSA_IncorrectIVlength', async ({ apiContext }) => {
         category: 'SERVER',
         statusCode: 400,
         errorCode: 'INVALID_IV',
-        message: 'Invalid IV length',
+        message: 'Invalid IV length. Expected a 16-byte IV encoded as 24 characters Base64 String',
     });
 });
 
@@ -574,7 +574,7 @@ test('ENC_NEG_017_JWSAESRSA_IncorrectIVlength', async ({ apiContext }) => {
         category: 'SERVER',
         statusCode: 400,
         errorCode: 'INVALID_IV',
-        message: 'Invalid IV length',
+        message: 'Invalid IV length. Expected a 16-byte IV encoded as 24 characters Base64 String',
     });
 });
 

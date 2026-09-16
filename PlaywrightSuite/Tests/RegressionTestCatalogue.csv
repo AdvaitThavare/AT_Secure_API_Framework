@@ -61,5 +61,5 @@ ENC-NEG-013,Encrypted,NEG,P1,JWS_AES_RSA ? invalid cek,Controlled cryptographic 
 ENC-NEG-014,Encrypted,NEG,P1,AES_RSA ? invalid IV,Controlled cryptographic failure,Implemented,
 ENC-NEG-015,Encrypted,NEG,P1,JWS_AES_RSA ? invalid IV,Controlled cryptographic failure,Implemented,
 ENC-NEG-016,Encrypted,NEG,P0,AES_RSA ? invalid IV length,Controlled cryptographic failure,Implemented,
-ENC-NEG-016,Encrypted,NEG,P0,JWS_AES_RSA ? invalid IV length,Controlled cryptographic failure,Implemented,
+ENC-NEG-017,Encrypted,NEG,P0,JWS_AES_RSA ? invalid IV length,Controlled cryptographic failure,Implemented,
 ENC-NEG-018,Encrypted,NEG,P0,JWS_AES_RSA ? signature verification failure,Signature verification failure is handled correctly,Retired,To be implemented when server crypto helpers are introduced
