@@ -1,50 +1,35 @@
 import type { RequestContext } from '../context/requestContext';
 import type { AppError } from '../errors/errorHandler';
-import { PAYLOAD_STATES, DATA_ENCRYPTIONS, type PayloadState, type DataEncryption, ENC_WRAPPER_CONTENT_TYPES, type EncWrapperContentType } from '../constants/payloadIdentifierConstants';
-import { HEADER_PAYLOAD_STATE, HEADER_DATA_ENCRYPTION, HEADER_ENC_WRAPPER_CONTENT_TYPE } from '../constants/headerConstants';
+import { DATA_ENCRYPTIONS, type DataEncryption, ENC_WRAPPER_CONTENT_TYPES, type EncWrapperContentType, type PayloadState } from '../constants/payloadIdentifierConstants';
+import { HEADER_DATA_ENCRYPTION, HEADER_ENC_WRAPPER_CONTENT_TYPE } from '../constants/headerConstants';
 
 type ValidCombination = {
   dataEncryption: DataEncryption;
   wrapperContentType: EncWrapperContentType;
 };
 
-const VALID_COMBINATIONS: Map<
-  PayloadState,
-  ValidCombination[]
-> = new Map([
-  [
-    'PLAIN',
-    [
-      {
-        dataEncryption: 'NA',
-        wrapperContentType: 'NA',
-      },
-    ],
+const VALID_COMBINATIONS = {
+  PLAIN: [
+    {
+      dataEncryption: 'NA',
+      wrapperContentType: 'NA',
+    },
   ],
-  [
-    'ENCRYPTED',
-    [
-      {
-        dataEncryption: 'JWE',
-        wrapperContentType: 'application/json',
-      },
-      {
-        dataEncryption: 'JWS_AES_RSA',
-        wrapperContentType: 'application/json',
-      },
-      {
-        dataEncryption: 'AES_RSA',
-        wrapperContentType: 'application/json',
-      },
-    ],
+  ENCRYPTED: [
+    {
+      dataEncryption: 'JWE',
+      wrapperContentType: 'application/json',
+    },
+    {
+      dataEncryption: 'JWS_AES_RSA',
+      wrapperContentType: 'application/json',
+    },
+    {
+      dataEncryption: 'AES_RSA',
+      wrapperContentType: 'application/json',
+    },
   ],
-]);
-
-function isPayloadState(
-  value: string
-): value is PayloadState {
-  return PAYLOAD_STATES.includes(value as PayloadState);
-}
+} satisfies Record<PayloadState, ValidCombination[]>;
 
 function isDataEncryption(
   value: string
@@ -64,9 +49,6 @@ export function payloadTypeIdentifier(
   context: RequestContext
 ): AppError | null {
 
-  const payloadStateValues =
-    context.requestHeaders[HEADER_PAYLOAD_STATE];
-
   const dataEncryptionValues =
     context.requestHeaders[HEADER_DATA_ENCRYPTION];
 
@@ -76,7 +58,6 @@ export function payloadTypeIdentifier(
   // ===== Multiple Header Values Check =====
 
   if (
-    payloadStateValues?.length > 1 ||
     dataEncryptionValues?.length > 1 ||
     encWrapperContentTypeValues?.length > 1
   ) {
@@ -90,12 +71,10 @@ export function payloadTypeIdentifier(
 
   // ===== Required Headers =====
 
-  const payloadState = payloadStateValues?.[0];
   const dataEncryption = dataEncryptionValues?.[0];
   const encWrapperContentType = encWrapperContentTypeValues?.[0];
 
   if (
-    !payloadState ||
     !dataEncryption ||
     !encWrapperContentType
   ) {
@@ -110,7 +89,6 @@ export function payloadTypeIdentifier(
   // ===== Supported Values =====
 
   if (
-    !isPayloadState(payloadState) ||
     !isDataEncryption(dataEncryption) ||
     !isEncWrapperContentType(encWrapperContentType)
   ) {
@@ -124,10 +102,10 @@ export function payloadTypeIdentifier(
 
   // ===== Valid Combination =====
 
-  const allowedCombinations = VALID_COMBINATIONS.get(payloadState);
+  const allowedCombinations = VALID_COMBINATIONS[context.payloadType!]
 
   const isValidCombination =
-    allowedCombinations?.some(
+    allowedCombinations.some(
       (combination) =>
         combination.dataEncryption === dataEncryption &&
         combination.wrapperContentType === encWrapperContentType
@@ -144,7 +122,6 @@ export function payloadTypeIdentifier(
 
   // ===== Populate Context =====
 
-  context.payloadType = payloadState;
   context.encryptionType = dataEncryption;
 
   return null;

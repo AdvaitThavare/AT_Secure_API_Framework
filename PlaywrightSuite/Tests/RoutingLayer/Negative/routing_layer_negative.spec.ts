@@ -3,7 +3,7 @@ import { test } from '../../../apiSetup/apiContext';
 
 test('RTE_NEG_001_UnsupportedHTTPMethod', async ({ apiContext }) => {
     const response = await apiContext.fetch('/echo', {
-        method: 'OPTIONS',
+        method: 'GET',
         headers: {
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
@@ -22,7 +22,7 @@ test('RTE_NEG_001_UnsupportedHTTPMethod', async ({ apiContext }) => {
         category: 'SERVER',
         statusCode: 405,
         errorCode: 'METHOD_NOT_ALLOWED',
-        message: 'HTTP method not allowed',
+        message: "HTTP method 'GET' not allowed for echoService",
     });
 });
 
@@ -50,7 +50,7 @@ test('RTE_NEG_002_UnknownEndpoint', async ({ apiContext }) => {
         category: 'SERVER',
         statusCode: 404,
         errorCode: 'SERVICE_NOT_FOUND',
-        message: 'Endpoint not found',
+        message: 'API service not found',
     });
 });
 
@@ -58,7 +58,6 @@ test('RTE_NEG_003_MissingPayloadStateHeader', async ({ apiContext }) => {
     const response = await apiContext.fetch('/echo', {
         method: 'POST',
         headers: {
-            'x-payload-state': '',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
             'x-enc-wrapper-content-type': 'NA',

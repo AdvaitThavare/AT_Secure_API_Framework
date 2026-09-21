@@ -1,8 +1,7 @@
 import { createHTTPSServer, startHTTPSServer } from './serverManagement/httpsServer';
 import { sendError } from './errors/errorHandler';
 import { requestValidator } from './payloadFormatValidation/requestValidator';
-import { methodRouter } from './requestRouting/methodRouter';
-import { endpointRouter } from './requestRouting/endpointRouter';
+import { endpointValidator } from './requestRouting/endPointValidator';
 import { serviceDispatcher } from './serviceManagement/serviceDispatcher';
 import { payloadTypeIdentifier } from './requestRouting/payloadTypeIdentifier';
 import { encWrapperValidator } from './payloadFormatValidation/encWrapperValidator';
@@ -11,27 +10,27 @@ import { sendResponse } from './responseHandler/responseHandler';
 import { requestHandler } from './requestHandler/requestHandler';
 import { createServiceContext } from './context/requestContext';
 import { responseConstructor } from './responseHandler/responseConstructor';
-
+import { type HttpMethod } from './serviceManagement/serviceRegistry';
 
 const server = createHTTPSServer(
   async (req, res) => {
     const context = await requestHandler(req);
 
-    const methodError = methodRouter(context);
+    const serviceDefinitionError =
+      endpointValidator(context);
 
-    if (methodError) {
-      sendError(res, methodError);
+    if (
+      'statusCode' in serviceDefinitionError
+    ) {
+      sendError(res, serviceDefinitionError);
       return;
     }
 
-    const route = endpointRouter(context);
+    const serviceDefinition =
+      serviceDefinitionError;
 
-    if ('statusCode' in route) {
-      sendError(res, route);
-      return;
-    }
-
-    const payloadTypeError = payloadTypeIdentifier(context);
+    const payloadTypeError =
+      payloadTypeIdentifier(context);
 
     if (payloadTypeError) {
       sendError(res, payloadTypeError);
@@ -41,14 +40,16 @@ const server = createHTTPSServer(
     let cryptoExecutionContext;
 
     if (context.payloadType === 'ENCRYPTED') {
-      const wrapperError = encWrapperValidator(context);
+      const wrapperError =
+        encWrapperValidator(context);
 
       if (wrapperError) {
         sendError(res, wrapperError);
         return;
       }
 
-      const decryptResult = await decryptPayload(context);
+      const decryptResult =
+        await decryptPayload(context);
 
       if (decryptResult.error) {
         sendError(res, decryptResult.error);
@@ -59,36 +60,42 @@ const server = createHTTPSServer(
         decryptResult.cryptoExecutionContext;
     }
 
-    const validationError = requestValidator(context);
+    const validationError =
+      requestValidator(context);
 
     if (validationError) {
       sendError(res, validationError);
       return;
     }
 
-    const serviceContext = createServiceContext(context);
+    const serviceContext =
+      createServiceContext(context);
 
     const serviceResponse =
       await serviceDispatcher(
-        route,
-        serviceContext
+        serviceDefinition,
+        serviceContext,
+        context.req.method as HttpMethod
       );
 
-    let responseBody = responseConstructor(serviceResponse);
+    let responseBody =
+      responseConstructor(serviceResponse);
 
     if (context.payloadType === 'ENCRYPTED') {
-      const encryptResult = await encryptPayload(
-        context,
-        cryptoExecutionContext!,
-        responseBody
-      );
+      const encryptResult =
+        await encryptPayload(
+          context,
+          cryptoExecutionContext!,
+          responseBody
+        );
 
       if (encryptResult.error) {
         sendError(res, encryptResult.error);
         return;
       }
 
-      responseBody = encryptResult.responseBody;
+      responseBody =
+        encryptResult.responseBody;
     }
 
     sendResponse(
@@ -97,6 +104,7 @@ const server = createHTTPSServer(
       responseBody,
       context.responseHeaders
     );
-  });
+  }
+);
 
 startHTTPSServer(server);
