@@ -16,6 +16,8 @@ test('TLS_NEG_001_MissingClientCertificate', async () => {
         await apiContext.fetch('/echo', {
             method: 'POST',
             headers: {
+                'x-at-client-id': 'AT-CLIENT-001',
+                'x-at-client-secret': 'AT-SECRET-001',
                 'x-payload-state': 'PLAIN',
                 'x-data-encryption': 'NA',
                 'Content-Type': 'application/json',
@@ -67,6 +69,8 @@ test('TLS_NEG_002_ClientCertificateSignedByUntrustedCA', async () => {
         await apiContext.fetch('/echo', {
             method: 'POST',
             headers: {
+                'x-at-client-id': 'AT-CLIENT-001',
+                'x-at-client-secret': 'AT-SECRET-001',
                 'x-payload-state': 'PLAIN',
                 'x-data-encryption': 'NA',
                 'Content-Type': 'application/json',
@@ -118,6 +122,8 @@ test('TLS_NEG_003_InvalidClientCertificatePrivateKeyPair', async () => {
         await apiContext.fetch('/echo', {
             method: 'POST',
             headers: {
+                'x-at-client-id': 'AT-CLIENT-001',
+                'x-at-client-secret': 'AT-SECRET-001',
                 'x-payload-state': 'PLAIN',
                 'x-data-encryption': 'NA',
                 'Content-Type': 'application/json',
