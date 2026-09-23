@@ -20,6 +20,8 @@ export async function encryptClientJWSAESRSA(
         '/clientCryptography/encryptJWS_AES_RSA',
         {
             headers: {
+                'x-at-client-id': 'AT-CLIENT-001',
+                'x-at-client-secret': 'AT-SECRET-001',
                 'x-payload-state': 'PLAIN',
                 'x-data-encryption': 'NA',
                 'content-type': contentType,
@@ -47,6 +49,8 @@ export async function decryptClientJWSAESRSA(
         '/clientCryptography/decryptJWS_AES_RSA',
         {
             headers: {
+                'x-at-client-id': 'AT-CLIENT-001',
+                'x-at-client-secret': 'AT-SECRET-001',
                 'x-payload-state': 'PLAIN',
                 'x-data-encryption': 'NA',
                 'content-type': 'application/json',
