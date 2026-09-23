@@ -22,6 +22,8 @@ test('ENC_POS_001_JWEEchoRoundTrip_JSON', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'JWE',
             'Content-Type': contentType,
@@ -68,6 +70,8 @@ test('ENC_POS_002_AESRSAEchoRoundTrip_JSON', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'AES_RSA',
             'Content-Type': contentType,
@@ -120,6 +124,8 @@ test('ENC_POS_003_JWSAESRSAEchoRoundTrip_JSON', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'JWS_AES_RSA',
             'Content-Type': contentType,
@@ -168,6 +174,8 @@ test('ENC_POS_004_JWEEchoRoundTrip_Text', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'JWE',
             'Content-Type': contentType,
@@ -210,6 +218,8 @@ test('ENC_POS_005_AESRSAEchoRoundTrip_Text', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'AES_RSA',
             'Content-Type': contentType,
@@ -258,6 +268,8 @@ test('ENC_POS_006_JWSAESRSAEchoRoundTrip_Text', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'JWS_AES_RSA',
             'Content-Type': contentType,
