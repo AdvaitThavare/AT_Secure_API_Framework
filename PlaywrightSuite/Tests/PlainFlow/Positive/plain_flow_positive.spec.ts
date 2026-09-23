@@ -46,6 +46,8 @@ test('PLN_POS_002_NestedJSONobject', async ({ apiContext }) => {
   const contentType = 'application/json'
   const response = await apiContext.post('/echo', {
     headers: {
+        'x-at-client-id': 'AT-CLIENT-001',
+        'x-at-client-secret': 'AT-SECRET-001',
       'x-payload-state': 'PLAIN',
       'x-data-encryption': 'NA',
       'Content-Type': contentType,
@@ -72,6 +74,8 @@ test('PLN_POS_003_PlainText', async ({ apiContext }) => {
   const contentType = 'text/plain'
   const response = await apiContext.post('/echo', {
     headers: {
+        'x-at-client-id': 'AT-CLIENT-001',
+        'x-at-client-secret': 'AT-SECRET-001',
       'x-payload-state': 'PLAIN',
       'x-data-encryption': 'NA',
       'Content-Type': contentType,
@@ -102,6 +106,8 @@ test('PLN_POS_004_PlainTextJSONLikeContent', async ({ apiContext }) => {
   const contentType = 'text/plain'
   const response = await apiContext.post('/echo', {
     headers: {
+        'x-at-client-id': 'AT-CLIENT-001',
+        'x-at-client-secret': 'AT-SECRET-001',
       'x-payload-state': 'PLAIN',
       'x-data-encryption': 'NA',
       'Content-Type': contentType,
