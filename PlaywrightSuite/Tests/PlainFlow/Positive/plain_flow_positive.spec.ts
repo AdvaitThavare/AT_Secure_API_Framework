@@ -15,6 +15,8 @@ test('PLN_POS_001_SimpleJSONobject', async ({ apiContext }) => {
       'x-data-encryption': 'NA',
       'Content-Type': contentType,
       'x-enc-wrapper-content-type': 'NA',
+      'x-at-client-id': 'AT-CLIENT-001',
+      'x-at-client-secret': 'AT-SECRET-001'
     },
     data: payload,
   });

@@ -17,6 +17,7 @@ export interface RequestContext {
   payloadType?: PayloadState;
   encryptionType?: DataEncryption;
   encryptedWrapper?: EncryptedWrapper;
+  clientId?: string;
 }
 
 export type ServiceContext = Pick<

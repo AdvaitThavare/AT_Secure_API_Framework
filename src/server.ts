@@ -11,13 +11,13 @@ import { requestHandler } from './requestHandler/requestHandler';
 import { createServiceContext } from './context/requestContext';
 import { responseConstructor } from './responseHandler/responseConstructor';
 import { type HttpMethod } from './serviceManagement/serviceRegistry';
+import { clientAuthenticator } from './clientAuthentication/clientAuthenticator';
 
 const server = createHTTPSServer(
   async (req, res) => {
     const context = await requestHandler(req);
 
-    const serviceDefinitionError =
-      endpointValidator(context);
+    const serviceDefinitionError = endpointValidator(context);
 
     if (
       'statusCode' in serviceDefinitionError
@@ -26,11 +26,20 @@ const server = createHTTPSServer(
       return;
     }
 
-    const serviceDefinition =
-      serviceDefinitionError;
+    const serviceDefinition = serviceDefinitionError;
 
-    const payloadTypeError =
-      payloadTypeIdentifier(context);
+    const clientAuthenticationError =
+      clientAuthenticator(
+        context,
+        serviceDefinition.serviceKey
+      );
+
+    if (clientAuthenticationError) {
+      sendError(res, clientAuthenticationError);
+      return;
+    }
+
+    const payloadTypeError = payloadTypeIdentifier(context);
 
     if (payloadTypeError) {
       sendError(res, payloadTypeError);
