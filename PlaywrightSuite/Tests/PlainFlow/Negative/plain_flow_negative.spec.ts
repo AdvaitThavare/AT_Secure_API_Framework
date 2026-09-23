@@ -4,6 +4,8 @@ import { test } from '../../../apiSetup/apiContext';
 test('PLN_NEG_001_MalformedJSON', async ({ apiContext }) => {
   const response = await apiContext.post('/echo', {
     headers: {
+        'x-at-client-id': 'AT-CLIENT-001',
+        'x-at-client-secret': 'AT-SECRET-001',
       'x-payload-state': 'PLAIN',
       'x-data-encryption': 'NA',
       'Content-Type': 'application/json',
@@ -28,6 +30,8 @@ test('PLN_NEG_001_MalformedJSON', async ({ apiContext }) => {
 test('PLN_NEG_002_TopLevelJSONArray', async ({ apiContext }) => {
   const response = await apiContext.post('/echo', {
     headers: {
+        'x-at-client-id': 'AT-CLIENT-001',
+        'x-at-client-secret': 'AT-SECRET-001',
       'x-payload-state': 'PLAIN',
       'x-data-encryption': 'NA',
       'Content-Type': 'application/json',
@@ -52,6 +56,8 @@ test('PLN_NEG_002_TopLevelJSONArray', async ({ apiContext }) => {
 test('PLN_NEG_003_TopLevelJSONNull', async ({ apiContext }) => {
   const response = await apiContext.post('/echo', {
     headers: {
+        'x-at-client-id': 'AT-CLIENT-001',
+        'x-at-client-secret': 'AT-SECRET-001',
       'x-payload-state': 'PLAIN',
       'x-data-encryption': 'NA',
       'Content-Type': 'application/json',
@@ -76,6 +82,8 @@ test('PLN_NEG_003_TopLevelJSONNull', async ({ apiContext }) => {
 test('PLN_NEG_004_TopLevelJSONPrimitive', async ({ apiContext }) => {
   const response = await apiContext.post('/echo', {
     headers: {
+        'x-at-client-id': 'AT-CLIENT-001',
+        'x-at-client-secret': 'AT-SECRET-001',
       'x-payload-state': 'PLAIN',
       'x-data-encryption': 'NA',
       'Content-Type': 'application/json',
@@ -100,6 +108,8 @@ test('PLN_NEG_004_TopLevelJSONPrimitive', async ({ apiContext }) => {
 test('PLN_NEG_005_JSONContentTypeNonJSONBody', async ({ apiContext }) => {
   const response = await apiContext.post('/echo', {
     headers: {
+        'x-at-client-id': 'AT-CLIENT-001',
+        'x-at-client-secret': 'AT-SECRET-001',
       'x-payload-state': 'PLAIN',
       'x-data-encryption': 'NA',
       'Content-Type': 'application/json',
@@ -124,6 +134,8 @@ test('PLN_NEG_005_JSONContentTypeNonJSONBody', async ({ apiContext }) => {
 test('PLN_NEG_006_UnsupportedContentType', async ({ apiContext }) => {
   const response = await apiContext.post('/echo', {
     headers: {
+        'x-at-client-id': 'AT-CLIENT-001',
+        'x-at-client-secret': 'AT-SECRET-001',
       'x-payload-state': 'PLAIN',
       'x-data-encryption': 'NA',
       'Content-Type': 'application/xml',
@@ -149,6 +161,8 @@ test('PLN_NEG_006_UnsupportedContentType', async ({ apiContext }) => {
 test('PLN_NEG_007_EmptyJSONRequestBody', async ({ apiContext }) => {
   const response = await apiContext.post('/echo', {
     headers: {
+        'x-at-client-id': 'AT-CLIENT-001',
+        'x-at-client-secret': 'AT-SECRET-001',
       'x-payload-state': 'PLAIN',
       'x-data-encryption': 'NA',
       'Content-Type': 'application/json',

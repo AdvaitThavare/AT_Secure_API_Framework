@@ -5,6 +5,8 @@ test('RTE_NEG_001_UnsupportedHTTPMethod', async ({ apiContext }) => {
     const response = await apiContext.fetch('/echo', {
         method: 'GET',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -30,6 +32,8 @@ test('RTE_NEG_002_UnknownEndpoint', async ({ apiContext }) => {
     const response = await apiContext.fetch('/echh', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -58,6 +62,8 @@ test('RTE_NEG_003_MissingPayloadStateHeader', async ({ apiContext }) => {
     const response = await apiContext.fetch('/echo', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
             'x-enc-wrapper-content-type': 'NA',
@@ -85,6 +91,8 @@ test('RTE_NEG_004_MissingDataEncryptionHeader', async ({ apiContext }) => {
     const response = await apiContext.fetch('/echo', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': '',
             'Content-Type': 'application/json',
@@ -113,6 +121,8 @@ test('RTE_NEG_005_MissingEncryptionWrapperContentTypeHeader', async ({ apiContex
     const response = await apiContext.fetch('/echo', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -141,6 +151,8 @@ test('RTE_NEG_006_InvalidPayloadStateValue', async ({ apiContext }) => {
     const response = await apiContext.fetch('/echo', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ABCD',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -169,6 +181,8 @@ test('RTE_NEG_007_InvalidDataEncryptionValue', async ({ apiContext }) => {
     const response = await apiContext.fetch('/echo', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'ABCD',
             'Content-Type': 'application/json',
@@ -197,6 +211,8 @@ test('RTE_NEG_008_InvalidEncryptionWrapperContentTypeValue', async ({ apiContext
     const response = await apiContext.fetch('/echo', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -225,6 +241,8 @@ test('RTE_NEG_009_InvalidFrameworkHeaderCombination', async ({ apiContext }) => 
     const response = await apiContext.fetch('/echo', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'JWE',
             'Content-Type': 'application/json',

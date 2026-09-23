@@ -41,6 +41,8 @@ test('TOOL_Echo_JWE', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'JWE',
             'Content-Type': 'application/json',
@@ -112,6 +114,8 @@ test('TOOL_Echo_AESRSA', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'AES_RSA',
             'Content-Type': 'application/json',
@@ -191,6 +195,8 @@ test('TOOL_Echo_JWSAESRSA', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'JWS_AES_RSA',
             'Content-Type': 'application/json',

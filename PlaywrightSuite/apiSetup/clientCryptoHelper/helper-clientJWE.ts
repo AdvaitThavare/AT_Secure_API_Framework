@@ -20,6 +20,8 @@ export async function encryptClientJWE(
         '/clientCryptography/encryptJWE',
         {
             headers: {
+                'x-at-client-id': 'AT-CLIENT-001',
+                'x-at-client-secret': 'AT-SECRET-001',
                 'x-payload-state': 'PLAIN',
                 'x-data-encryption': 'NA',
                 'content-type': contentType,
@@ -47,6 +49,8 @@ export async function decryptClientJWE(
         '/clientCryptography/decryptJWE',
         {
             headers: {
+                'x-at-client-id': 'AT-CLIENT-001',
+                'x-at-client-secret': 'AT-SECRET-001',
                 'x-payload-state': 'PLAIN',
                 'x-data-encryption': 'NA',
                 'content-type': 'application/json',

@@ -7,6 +7,8 @@ import { encryptClientJWSAESRSA } from '../../../apiSetup/clientCryptoHelper/hel
 test('ENC_NEG_001_JWE_InvalidEncryptedWrapper', async ({ apiContext }) => {
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'JWE',
             'Content-Type': 'application/json',
@@ -32,6 +34,8 @@ test('ENC_NEG_001_JWE_InvalidEncryptedWrapper', async ({ apiContext }) => {
 test('ENC_NEG_002_AESRSA_InvalidEncryptedWrapper', async ({ apiContext }) => {
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'AES_RSA',
             'Content-Type': 'application/json',
@@ -57,6 +61,8 @@ test('ENC_NEG_002_AESRSA_InvalidEncryptedWrapper', async ({ apiContext }) => {
 test('ENC_NEG_003_JWSAESRSA_InvalidEncryptedWrapper', async ({ apiContext }) => {
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'JWS_AES_RSA',
             'Content-Type': 'application/json',
@@ -104,6 +110,8 @@ test('ENC_NEG_004_JWE_CorruptedCiphertext', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'JWE',
             'Content-Type': contentType,
@@ -147,6 +155,8 @@ test('ENC_NEG_005_AESRSA_CorruptedCiphertext', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'AES_RSA',
             'Content-Type': contentType,
@@ -192,6 +202,8 @@ test('ENC_NEG_006_JWSAESRSA_CorruptedCiphertext', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'JWS_AES_RSA',
             'Content-Type': contentType,
@@ -237,6 +249,8 @@ test('ENC_NEG_010_AES_RSA_CEKDecryptionFailed', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'AES_RSA',
             'Content-Type': contentType,
@@ -282,6 +296,8 @@ test('ENC_NEG_011_AES_RSA_InvalidCEK', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'AES_RSA',
             'Content-Type': contentType,
@@ -327,6 +343,8 @@ test('ENC_NEG_012_JWSAESRSA_CEKDecryptionFailed', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'JWS_AES_RSA',
             'Content-Type': contentType,
@@ -372,6 +390,8 @@ test('ENC_NEG_013_JWSAESRSA_InvalidCEK', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'JWS_AES_RSA',
             'Content-Type': contentType,
@@ -417,6 +437,8 @@ test('ENC_NEG_014_AES_RSA_InvalidIV', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'AES_RSA',
             'Content-Type': contentType,
@@ -462,6 +484,8 @@ test('ENC_NEG_015_JWSAESRSA_InvalidIV', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'JWS_AES_RSA',
             'Content-Type': contentType,
@@ -507,6 +531,8 @@ test('ENC_NEG_016_AES_RSA_IncorrectIVlength', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'AES_RSA',
             'Content-Type': contentType,
@@ -552,6 +578,8 @@ test('ENC_NEG_017_JWSAESRSA_IncorrectIVlength', async ({ apiContext }) => {
 
     const response = await apiContext.post('/echo', {
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'ENCRYPTED',
             'x-data-encryption': 'JWS_AES_RSA',
             'Content-Type': contentType,
