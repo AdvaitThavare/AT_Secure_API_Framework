@@ -6,6 +6,8 @@ test('CRY_NEG_004_JWEDecryptMissingOrInvalidEncResPayload', async ({ apiContext 
     const response = await apiContext.fetch('/clientCryptography/decryptJWE', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -32,6 +34,8 @@ test('CRY_NEG_005_JWEDecryptMalformedJWE', async ({ apiContext }) => {
     const response = await apiContext.fetch('/clientCryptography/decryptJWE', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -60,6 +64,8 @@ test('CRY_NEG_006_JWEDecryptInvalidEncryptedKey', async ({ apiContext }) => {
     const response = await apiContext.fetch('/clientCryptography/decryptJWE', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -88,6 +94,8 @@ test('CRY_NEG_007_JWEDecryptInvalidJWEPayload', async ({ apiContext }) => {
     const response = await apiContext.fetch('/clientCryptography/decryptJWE', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -116,6 +124,8 @@ test('CRY_NEG_008_AESRSADecryptMissingEncryptedPayload', async ({ apiContext }) 
     const response = await apiContext.fetch('/clientCryptography/decryptAES_RSA', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -145,6 +155,8 @@ test('CRY_NEG_009_AESRSADecryptMissingEncryptedKey', async ({ apiContext }) => {
     const response = await apiContext.fetch('/clientCryptography/decryptAES_RSA', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -174,6 +186,8 @@ test('CRY_NEG_010_AESRSADecryptMissingIV', async ({ apiContext }) => {
     const response = await apiContext.fetch('/clientCryptography/decryptAES_RSA', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -203,6 +217,8 @@ test('CRY_NEG_011_AESRSADecryptInvalidEncryptedData', async ({ apiContext }) => 
     const response = await apiContext.fetch('/clientCryptography/decryptAES_RSA', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -233,6 +249,8 @@ test('CRY_NEG_012_JWSAESRSADecryptMissingEncryptedPayload', async ({ apiContext 
     const response = await apiContext.fetch('/clientCryptography/decryptJWS_AES_RSA', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -262,6 +280,8 @@ test('CRY_NEG_013_JWSAESRSADecryptMissingEncryptedKey', async ({ apiContext }) =
     const response = await apiContext.fetch('/clientCryptography/decryptJWS_AES_RSA', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -291,6 +311,8 @@ test('CRY_NEG_014_JWSAESRSADecryptMissingIV', async ({ apiContext }) => {
     const response = await apiContext.fetch('/clientCryptography/decryptJWS_AES_RSA', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -320,6 +342,8 @@ test('CRY_NEG_015_JWSAESRSAInvalidJWSSignature', async ({ apiContext }) => {
     const response = await apiContext.fetch('/clientCryptography/decryptJWS_AES_RSA', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
@@ -350,6 +374,8 @@ test('CRY_NEG_016_JWSAESRSAInvalidCryptographicContent', async ({ apiContext }) 
     const response = await apiContext.fetch('/clientCryptography/decryptJWS_AES_RSA', {
         method: 'POST',
         headers: {
+            'x-at-client-id': 'AT-CLIENT-001',
+            'x-at-client-secret': 'AT-SECRET-001',
             'x-payload-state': 'PLAIN',
             'x-data-encryption': 'NA',
             'Content-Type': 'application/json',
