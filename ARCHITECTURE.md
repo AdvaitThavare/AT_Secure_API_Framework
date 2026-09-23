@@ -1543,4 +1543,247 @@ The Service Dispatcher uses the same definition to determine:
 
 This provides a single source of truth, avoids configuration drift, supports future database persistence, and allows API-level flow restrictions to be enforced consistently without coupling the generic request parser/validator or the individual services to routing policy.
 
-**Response Content-Type Architecture:** The framework uses a standardized JSON response envelope for all response media types. API services return the raw service payload together with `payloadContentType`, which identifies the payload's actual media type. The response layer serializes the service payload as required, embeds it in `responsePayload`, and includes `responseContentType` in the common JSON envelope. The framework always returns the outer HTTP response with `Content-Type: application/json` and separately exposes the actual service payload media type through `x-payload-content-type`. `payloadContentType` is the single source of truth for both values. This design applies to plain and encrypted flows; encrypted strategies encrypt the already-prepared common envelope without changing their existing encryption wrapper contracts. Request-side `Content-Type` handling remains user-defined and unchanged.
+
+
+## Step-3 Approach — Client Identity + API Subscriptions
+
+Step 3 introduces a self-contained **Client Authentication subsystem** responsible for determining whether a client application is permitted to access a registered API service.
+
+The subsystem is intentionally independent from endpoint routing, payload validation, cryptography, and API-service implementation. Other framework layers may consume its successful authentication result, but the client-authentication subsystem does not depend on those layers.
+
+### 1. Client Authentication
+
+All API services will require two framework-level headers:
+
+```text
+X-AT-Client-Id
+X-AT-Client-Secret
+```
+
+The primary identity throughout the entire client-authentication process is always the **Client ID**.
+
+`clientAuthenticator` will validate:
+
+* Client ID presence and validity
+* Client Secret validity for the supplied Client ID
+* Client ID ↔ TLS client-certificate mapping
+* Client ID ↔ API service subscription
+
+The layer may internally use small helper functions for these checks, but they remain part of one cohesive `clientAuthenticator` boundary. A separate `subscriptionValidator` layer is not required.
+
+### 2. Client Definition / Client Registry
+
+The framework will maintain a `ClientRegistry` containing a `ClientDefinition` for each application/client.
+
+Conceptually:
+
+```text
+ClientDefinition
+    ├── emailId
+    ├── applicationName
+    ├── clientId
+    ├── clientSecret / credential verifier
+    └── certificate information
+```
+
+`clientId` is the primary lookup key.
+
+Because the current registry is temporary in-code storage and intentionally small, certificate-related information such as certificate PEM/path, certificate name, and required certificate details may remain directly inside `ClientDefinition`.
+
+The conceptual design should still distinguish certificate identity from filesystem/storage details so the implementation can later move to database-backed or other persistent storage without changing the client-authentication contract.
+
+### 3. Certificate Validation
+
+TLS/mTLS remains responsible for establishing the TLS handshake and validating the certificate at the transport layer.
+
+After TLS succeeds and endpoint validation resolves the requested API service, `clientAuthenticator` uses the supplied **Client ID as the primary lookup key**:
+
+```text
+Client ID
+    ↓
+ClientDefinition
+    ↓
+Expected client certificate
+    ↓
+Compare with TLS client certificate
+```
+
+Therefore, a trusted and valid TLS certificate is not by itself sufficient. The certificate must also belong to the Client ID supplied in `X-AT-Client-Id`.
+
+Example:
+
+```text
+Client ID: A
+TLS Certificate: Client B certificate
+```
+
+results in client authentication failure with HTTP `401`.
+
+This design intentionally establishes the foundation required for Step 6. Step 6 should primarily expand the registry with additional clients/certificates rather than require a framework-level redesign.
+
+### 4. Subscription Registry
+
+API access is represented through a `SubscriptionRegistry`.
+
+A subscription is associated with:
+
+```text
+clientId
+serviceKey
+status
+```
+
+`serviceKey` is used as the API identity because subscriptions apply to the API service as a whole, not to individual HTTP methods.
+
+For example:
+
+```text
+Client A → echoService → ACTIVE
+Client A → balanceService → PENDING
+Client B → echoService → ACTIVE
+```
+
+Subscription status represents the lifecycle of the client/API relationship. At runtime, only an active/approved subscription permits access.
+
+Pending, inactive, revoked, or other future states can therefore be represented without redesigning the subscription model.
+
+### 5. Service Registry Interaction
+
+`clientAuthenticator` does not perform endpoint or URL lookup and does not depend directly on `ServiceRegistry`.
+
+`endPointValidator` remains responsible for resolving the request to a `ServiceDefinition`.
+
+The validated `serviceKey` is then supplied to `clientAuthenticator`.
+
+Conceptually:
+
+```text
+Request
+    ↓
+endPointValidator
+    ↓
+ServiceDefinition / serviceKey
+    ↓
+clientAuthenticator
+    ├── Client Registry
+    ├── Client certificate information
+    └── Subscription Registry
+```
+
+This preserves the independence of the client-authentication subsystem while avoiding a second service lookup.
+
+### 6. Client Authentication Output
+
+After successful validation, the framework may expose the authenticated `clientId` as trusted derived state in `RequestContext`.
+
+The client secret remains framework-internal and should not be propagated to API services.
+
+`ServiceContext` may later expose authenticated client identity where an API service requires it, while framework-only credential and cryptographic material remain outside the service-facing context.
+
+### 7. Error Model
+
+Client credential failures use HTTP `401` with a common invalid-credential contract.
+
+Examples include:
+
+```text
+Missing Client ID / Secret
+Invalid Client ID
+Invalid Client Secret
+Client ID + Secret mismatch
+Client ID + certificate mismatch
+```
+
+These should not unnecessarily disclose which credential component was correct.
+
+API subscription failures are conceptually different: the client has been identified, but the client does not have active access to the requested service. These should use HTTP `403`.
+
+The exact public error messages/codes will be finalized during implementation.
+
+### 8. Client-Authentication Security Boundary
+
+The Step-3 subsystem can be viewed as:
+
+```text
+Client Security
+│
+├── Client Registry
+│      └── ClientDefinition
+│
+├── Client Certificate Information
+│      └── stored within ClientDefinition
+│
+├── Subscription Registry
+│      └── clientId + serviceKey + status
+│
+└── clientAuthenticator
+       ├── credential validation
+       ├── certificate/client binding validation
+       └── subscription validation
+```
+
+Its core question is:
+
+> Is this client authenticated and permitted to access this API service?
+
+This is deliberately distinct from **customer/user authorization** in later steps. Customer-level authentication and data/business authorization belong to the API-service/business layer and are outside the Step-3 client-authentication boundary.
+
+### 9. Encrypted Flow / Client Crypto Changes
+
+Once `clientId` has been authenticated, the framework can use that identity to resolve client-specific cryptographic material.
+
+Encrypted request processing will therefore evolve toward:
+
+```text
+Client Authentication
+    ↓
+authenticated clientId
+    ↓
+client-specific crypto material
+    ↓
+decrypt / encrypt
+```
+
+The existing `clientCryptoServices` will be adapted to this model as the final implementation task of Step 3, after the client identity and registry foundation is established.
+
+### 10. Future Database Direction
+
+The initial implementation intentionally uses small in-code registries.
+
+The conceptual model is nevertheless designed around persistent entities and relationships:
+
+```text
+Application / Client
+        |
+        +── Credentials
+        +── Certificate information
+        +── API subscriptions
+                  |
+                  +── serviceKey
+                  +── status
+```
+
+A future database can therefore replace the in-code registries without changing the higher-level client-authentication responsibilities or introducing a different security model.
+
+The current in-code structures should be treated as temporary storage, while `ClientDefinition`, certificate information, and `SubscriptionDefinition` represent the domain concepts that will eventually map to persistent data.
+
+### 11. Step-6 Compatibility
+
+Step 3 establishes the framework capability for client identity and certificate binding.
+
+Step 6 should primarily add additional client/application and certificate records, for example:
+
+```text
+Client A → Certificate A
+Client B → Certificate B
+Client C → Certificate C
+```
+
+and later, if required:
+
+```text
+Client A → Certificate A1
+         → Certificate A2
+```
+
+The framework's client-authentication flow should not require structural refactoring merely because additional clients are introduced.
