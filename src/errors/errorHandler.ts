@@ -19,10 +19,17 @@ export function sendError(
 
   res.end(
     JSON.stringify({
-      category: error.category,
-      statusCode: error.statusCode,
-      errorCode: error.errorCode,
-      message: error.message,
+      responseStatus: {
+        success: false
+      },
+      responsePayload: {
+        category: error.category,
+        statusCode: error.statusCode,
+        errorCode: error.errorCode,
+        message: error.message,
+      },
+      responseContentType: 'application/json'
     })
   );
 }
+
