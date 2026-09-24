@@ -1,7 +1,7 @@
 import type { PayloadState } from '../constants/payloadIdentifierConstants';
 import type { ServiceContext } from '../context/requestContext';
 import type { ServiceResponse } from './serviceResponse';
-import { echoService } from '../servicesAPI/miscellaneous/echoService';
+import { echoService } from '../servicesAPI/miscellaneous/echoService/echoService';
 import { clientdecryptJWE } from '../servicesAPI/miscellaneous/clientCryptography/JWE/clientdecryptJWE';
 import { clientencryptJWE } from '../servicesAPI/miscellaneous/clientCryptography/JWE/clientencryptJWE';
 import { clientdecryptAES_RSA } from '../servicesAPI/miscellaneous/clientCryptography/AES_RSA/clientdecryptAES_RSA';
@@ -37,7 +37,7 @@ export const serviceRegistry: ServiceDefinition[] = [
     endpoint: '/echo',
     allowedMethods: ['POST'],
     allowedFrameworkFlows: ['PLAIN', 'ENCRYPTED'],
-    mandatoryHeaders: [],
+    mandatoryHeaders: ['authorization'],
     service: echoService,
   },
   {

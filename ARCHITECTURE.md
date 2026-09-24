@@ -1543,8 +1543,6 @@ The Service Dispatcher uses the same definition to determine:
 
 This provides a single source of truth, avoids configuration drift, supports future database persistence, and allows API-level flow restrictions to be enforced consistently without coupling the generic request parser/validator or the individual services to routing policy.
 
-
-
 ## Step-3 Approach — Client Identity + API Subscriptions
 
 Step 3 introduces a self-contained **Client Authentication subsystem** responsible for determining whether a client application is permitted to access a registered API service.
@@ -1787,3 +1785,314 @@ Client A → Certificate A1
 ```
 
 The framework's client-authentication flow should not require structural refactoring merely because additional clients are introduced.
+
+
+
+## Step-4 Approach — Customer Authentication and API-Level Authorization
+
+Step 4 introduces **customer/user-level authentication and authorization** for API services that require it.
+
+This is intentionally separate from Step 3 `clientAuthenticator`.
+
+### 1. Security Responsibility Boundary
+
+The framework maintains two distinct security levels:
+
+```text
+Client Authentication
+    ↓
+Framework-level
+    ↓
+"Is this application authenticated and allowed to access this API?"
+```
+
+and:
+
+```text
+Customer Authentication / Authorization
+    ↓
+API-service-level
+    ↓
+"Is this customer authenticated and allowed to perform this
+business operation on the requested data?"
+```
+
+`clientAuthenticator` remains responsible for Client ID, Client Secret, certificate binding, and API subscription.
+
+Customer authentication and business/data-level authorization remain outside the generic framework client-authentication subsystem.
+
+### 2. Authorization Header
+
+API services that require customer authentication will declare `Authorization` as a mandatory service header through the existing `mandatoryHeaders` mechanism.
+
+`endPointValidator` is responsible only for checking that the required header is present.
+
+It does not interpret:
+
+* Basic Authentication
+* username/password meaning
+* customer identity
+* user identity
+* service-specific authorization rules
+
+The raw normalized `Authorization` header already exists in `RequestContext.requestHeaders` and is exposed through `ServiceContext`. A duplicate context header is not required.
+
+### 3. Basic Authentication
+
+The initial customer authentication mechanism is HTTP Basic Authentication:
+
+```text
+Authorization: Basic <Base64(username:password)>
+```
+
+A reusable Basic Authentication helper may be introduced to handle the generic mechanism:
+
+```text
+Authorization header
+    ↓
+Basic Auth helper
+    ↓
+username
+password
+```
+
+The helper should remain independent of business terminology and should not assume that the username is always a `customerId`.
+
+For example:
+
+```text
+FundTransfer API
+    → username represents customerId
+
+Another API
+    → username represents userId
+```
+
+The API service decides how the resulting credentials are interpreted.
+
+### 4. API-Level Client Definition
+
+Customer/user credential data should not be placed into one generic framework-wide authentication definition.
+
+The first API that requires customer authentication will introduce an appropriate in-code `ClientDefinition` for its domain.
+
+Example:
+
+```text
+FundTransfer API
+    ↓
+FundTransfer ClientDefinition
+        ├── customerId
+        ├── password
+        └── additional required customer data
+```
+
+As additional APIs are introduced, each API decides whether:
+
+1. it requires customer authentication;
+2. it can reuse an existing `ClientDefinition`; or
+3. it requires a substantially different `ClientDefinition`.
+
+A new `ClientDefinition` should only be introduced when the new API/domain genuinely requires a different customer/user data model.
+
+The expectation is that most APIs will reuse existing definitions because banking APIs commonly operate on shared customer/master data.
+
+### 5. Shared Client Definitions
+
+Multiple API services may reuse the same `ClientDefinition`.
+
+For example:
+
+```text
+FundTransfer
+    └── ClientDefinition-A
+
+BalanceEnquiry
+    └── ClientDefinition-A
+
+TransactionHistory
+    └── ClientDefinition-A
+```
+
+The fact that services share a `ClientDefinition` does not mean they must all require authentication.
+
+Authentication remains an API-specific decision:
+
+```text
+API A
+    → ClientDefinition-A
+    → Authorization required
+
+API B
+    → ClientDefinition-A
+    → Authorization not required
+```
+
+### 6. Service-Specific Authorization
+
+The API service remains responsible for determining whether an authenticated customer is authorized to perform the requested business operation.
+
+For example:
+
+```text
+FundTransferService
+    ↓
+Basic Authentication
+    ↓
+authenticated customerId
+    ↓
+business/data authorization
+    ↓
+fund-transfer operation
+```
+
+Authentication establishes the customer's identity.
+
+The service then performs any required business/data checks, such as whether the customer owns or may operate on the requested account.
+
+This prevents generic framework layers from becoming aware of API-specific business rules.
+
+### 7. Reusable Authentication Helper vs Service Definition
+
+The reusable component should contain **authentication mechanics**, not API-specific identity definitions.
+
+Conceptually:
+
+```text
+BasicAuthHelper
+    → parses/validates Basic Authentication
+```
+
+while:
+
+```text
+API Service
+    → chooses the applicable ClientDefinition
+    → interprets username/password
+    → performs customer authentication
+    → performs business/data authorization
+```
+
+The helper should therefore operate against a generic credential contract rather than being coupled to a specific `FundTransferClientDefinition`.
+
+### 8. Client Definition Growth
+
+A `ClientDefinition` should remain simple and scalable.
+
+When a new API requires additional customer information, the existing definition may be extended when the data is part of the same customer/domain model.
+
+A separate definition should only be introduced when the new API is substantially different.
+
+The framework should avoid creating a generic "all possible customer data" definition in advance.
+
+### 9. Persistence Direction
+
+The initial implementation uses small in-code definitions/registries so that the security model can be established without introducing database infrastructure prematurely.
+
+The expected long-term evolution is:
+
+```text
+Current
+API Service
+    ↓
+in-code ClientDefinition
+
+Future
+API Service
+    ↓
+data/repository layer
+    ↓
+Master Customer Database
+```
+
+A shared master customer database is the preferred conceptual future direction when the number of APIs and customer data becomes large enough to justify it.
+
+Additional intermediate/domain-specific databases should only be introduced when there is a concrete scalability, ownership, performance, or data-isolation requirement.
+
+The current architecture should therefore avoid introducing database-specific abstractions before they are justified.
+
+### 10. Context and Identity
+
+Raw authentication credentials remain request input.
+
+After successful customer authentication, a derived trusted customer identity such as:
+
+```text
+customerId
+```
+
+may be propagated to the service-facing context where required.
+
+The framework should not repeatedly parse the `Authorization` header after authentication has established the customer identity.
+
+Credentials themselves should not be unnecessarily propagated to downstream service processing.
+
+### 11. Error Boundary
+
+Customer authentication failures are distinct from Step-3 client authentication failures.
+
+Typical customer-authentication failures may include:
+
+```text
+Missing Authorization header
+Malformed Basic Authentication
+Invalid credential encoding
+Invalid customer credentials
+```
+
+These should use a consistent authentication error contract without unnecessarily exposing which credential component was correct.
+
+Once the customer is successfully authenticated, service/business authorization failures remain API-service-level failures.
+
+### 12. Overall Step-4 Flow
+
+The resulting request flow is:
+
+```text
+TLS
+    ↓
+endPointValidator
+    ↓
+clientAuthenticator
+    ↓
+framework payload / crypto processing
+    ↓
+API Service
+    ↓
+Authorization header / Basic Auth helper
+    ↓
+Customer authentication
+    ↓
+Service-specific business/data authorization
+    ↓
+Business operation
+```
+
+This preserves the project's separation of responsibilities:
+
+```text
+clientAuthenticator
+    → application/client access
+
+BasicAuthHelper
+    → authentication mechanism
+
+ClientDefinition
+    → customer/user identity data required by an API/domain
+
+API Service
+    → customer authentication usage and business/data authorization
+```
+
+### 13. Architectural Principle
+
+Step 4 should remain service-oriented rather than becoming another large generic framework security layer.
+
+The framework provides reusable authentication mechanics and header infrastructure, while individual API services decide:
+
+* whether customer authentication is required;
+* which `ClientDefinition` they use;
+* how the authenticated identity is interpreted; and
+* what business/data authorization rules apply.
+
+This allows additional APIs to reuse existing customer definitions and authentication helpers without forcing the framework to understand every API's business model.

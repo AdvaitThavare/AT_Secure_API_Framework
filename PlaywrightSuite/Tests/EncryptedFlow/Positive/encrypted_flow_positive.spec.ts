@@ -28,6 +28,7 @@ test('ENC_POS_001_JWEEchoRoundTrip_JSON', async ({ apiContext }) => {
             'x-data-encryption': 'JWE',
             'Content-Type': contentType,
             'x-enc-wrapper-content-type': 'application/json',
+            'authorization':'Basic YXRlY2hvOjEyMzQ1Njc4'
         },
         data: {
             encReqPayload: encryptedRequest.responsePayload.encReqPayload,
