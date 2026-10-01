@@ -30,3 +30,6 @@ PlaywrightSuite/Tests/TransportLayer/UntrustedCertificate
 # TestScript Files
 PlaywrightSuite/apiSetup/clientCryptoHelper/transitPayloadTemp
 test-results
+
+# DataBase Files
+database/*.db

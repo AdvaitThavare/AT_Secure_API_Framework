@@ -12,6 +12,10 @@ import { createServiceContext } from './context/requestContext';
 import { responseConstructor } from './responseHandler/responseConstructor';
 import { type HttpMethod } from './serviceManagement/serviceRegistry';
 import { clientAuthenticator } from './clientAuthentication/clientAuthenticator';
+import { dbStart } from './databaseConfig/database/dbStart';
+import { dbStop } from './databaseConfig/database/dbStop';
+
+const database = dbStart();
 
 const server = createHTTPSServer(
   async (req, res) => {
@@ -115,5 +119,16 @@ const server = createHTTPSServer(
     );
   }
 );
+
+server.on('close', () => {
+  dbStop(database);
+});
+
+function shutdown(): void {
+  server.close();
+}
+
+process.once('SIGINT', shutdown);
+process.once('SIGTERM', shutdown);
 
 startHTTPSServer(server);

@@ -1786,8 +1786,6 @@ Client A → Certificate A1
 
 The framework's client-authentication flow should not require structural refactoring merely because additional clients are introduced.
 
-
-
 ## Step-4 Approach — Customer Authentication and API-Level Authorization
 
 Step 4 introduces **customer/user-level authentication and authorization** for API services that require it.
@@ -2096,3 +2094,620 @@ The framework provides reusable authentication mechanics and header infrastructu
 * what business/data authorization rules apply.
 
 This allows additional APIs to reuse existing customer definitions and authentication helpers without forcing the framework to understand every API's business model.
+
+## Step-5 Implementation Plan — Realistic APIs + SQLite Persistence
+
+Step 5 introduces the first realistic business API services and a minimal persistent data layer.
+
+The purpose of Step 5 is to establish a practical end-to-end model for:
+
+```text
+API Request
+    ↓
+Framework validation
+    ↓
+Client Authentication / API subscription
+    ↓
+Customer Authentication
+    ↓
+Service-specific business authorization
+    ↓
+Business logic
+    ↓
+Persistent data access
+    ↓
+ServiceResponse
+```
+
+The database integration in this step is intentionally minimal and limited to the customer/business services introduced below. A broader database architecture across the framework is deferred to a future Phase 3 activity.
+
+### 1. Database Technology
+
+The Step-5 persistence implementation will use **SQLite**.
+
+SQLite is selected because:
+
+* it is a relational SQL database;
+* it can be used locally without maintaining a separate database server;
+* the project already has SQL knowledge and can therefore use normal SQL concepts;
+* it provides enough relational and constraint functionality for the Step-5 requirements; and
+* the persistence design can later be adapted to PostgreSQL when the project grows.
+
+Step 5 should not be treated as making the overall framework permanently SQLite-dependent.
+
+The architectural goal is:
+
+```text
+API Service
+    ↓
+Data Access Layer
+    ↓
+SQLite
+```
+
+with the expectation that a future implementation can replace SQLite with PostgreSQL while preserving the higher-level service/data-access responsibilities.
+
+### 2. Step-5 API Services
+
+Three realistic API services will be introduced.
+
+#### CustomerMaintenance
+
+```text
+/customerMaintenance/searchCustomer
+/customerMaintenance/dcustomerAddition
+```
+
+`searchCustomer`:
+
+* supports GET and POST;
+* searches customer information using the supported lookup combinations;
+* may return multiple debit-account records for one customer.
+
+Supported lookup identities:
+
+```text
+customerId
+
+customerMobileNo + customerPAN
+
+customerId + debitAccountNo
+```
+
+`customerAddition`:
+
+* supports POST;
+* creates a new customer when a matching customer does not already exist;
+* rejects creation when the supplied mobile number or PAN already exists;
+* supports updating an existing customer when customerId and the corresponding PAN are supplied;
+* supports adding additional debit-account records for an existing customer;
+* replaces the existing mobile number when an update changes the customer's mobile number.
+
+#### FundTransfer
+
+```text
+/fundTransfer/fetchBalance
+```
+
+`fetchBalance`:
+
+* supports GET and POST;
+* requires customerId, debitAccountNo, and ifscCode;
+* retrieves the balance for the requested customer/account combination;
+* verifies that the requested account belongs to the authenticated customer before returning the balance.
+
+### 3. Customer Data Model
+
+Customer-level information will be stored in:
+
+```text
+customer_Details
+```
+
+Columns:
+
+```text
+customerId
+customerName
+customerMobileNo
+customerPAN
+customerGender
+customerStatus
+```
+
+Constraints:
+
+```text
+customerId         → Primary Key
+customerMobileNo   → Unique
+customerPAN        → Unique
+customerStatus     → Foreign Key to customer_Status
+```
+
+`customerId` and its Basic Authorization credential are provisioned before `customerAddition`; `customerAddition` authenticates that identity and creates the customer details record against the supplied `customerId`.
+
+The same customerId is used as the username for the Basic Authorization mechanism.
+
+`customerName` will initially be stored as one full-name field rather than separate first/middle/last-name columns. Separate name components can be introduced later if a concrete requirement requires them.
+
+Customer records will not be physically deleted during Step 5.
+
+### 4. Customer Status
+
+Customer lifecycle status is independent from individual bank-account status.
+
+The initial customer statuses are:
+
+```text
+ACTIVE
+INACTIVE
+```
+
+Customer status data will be maintained through:
+
+```text
+customer_Status
+```
+
+with a status code and description.
+
+When a customer becomes inactive, the associated customer accounts will also be marked inactive.
+
+The framework will not implement special automatic transitions from inactive to closed or blocked during Step 5.
+
+### 5. Customer Account Data Model
+
+Account information will be stored in:
+
+```text
+customer_Account_Details
+```
+
+Columns:
+
+```text
+serialNo
+customerId
+debitAccountNo
+ifscCode
+accountBalance
+accountStatus
+```
+
+Constraints:
+
+```text
+serialNo       → Primary Key
+customerId     → Foreign Key to customer_Details.customerId
+accountStatus  → Foreign Key to account_Status
+```
+
+The account business identity will initially be enforced as:
+
+```text
+UNIQUE(debitAccountNo, ifscCode)
+```
+
+`customerId` identifies the owner of the account and is therefore stored as a foreign key rather than being part of the account's own uniqueness constraint.
+
+`serialNo` is an internal row identifier and is not the customer's bank account number.
+
+A customer may have zero, one, or multiple account records.
+
+### 6. Account Status
+
+Account lifecycle status is independent from customer lifecycle status.
+
+The initial account statuses are:
+
+```text
+ACTIVE
+INACTIVE
+CLOSED
+BLOCKED
+```
+
+Account status data will be maintained through:
+
+```text
+account_Status
+```
+
+The `INACTIVE` state is reserved for future business rules such as temporary inactivity or timer-based state changes.
+
+Step 5 will not introduce automated timer-driven status processing.
+
+### 7. Customer-to-Account Relationship
+
+The relationship is:
+
+```text
+customer_Details
+      1
+      |
+      | customerId
+      |
+      N
+customer_Account_Details
+```
+
+A customer may exist without any linked account.
+
+When an account is created for an existing customer, the service explicitly inserts the corresponding customerId into `customer_Account_Details`.
+
+The database foreign key ensures that an account cannot reference a customer that does not exist.
+
+Customer deletion is not part of Step 5, so account cascading deletion is not required.
+
+### 8. Basic Authorization Credential Data
+
+A small credential table will be introduced for the customer Basic Authorization requirement.
+
+The table will map:
+
+```text
+CustomerId
+    ↓
+LDAP_username
+
+Password
+    ↓
+LDAP_password
+```
+
+The exact table name will be finalized with the schema.
+
+The intended columns are:
+
+```text
+LDAP_username
+LDAP_password
+```
+
+The current implementation treats this as a **local dummy credential store representing the required LDAP username/password relationship**.
+
+Step 5 does not implement an actual LDAP server or LDAP protocol integration.
+
+The expected relationship is:
+
+```text
+customer_Details.customerId
+        ↓
+LDAP_username
+```
+
+The customerId remains the business/customer identity and is also the username presented through Basic Authorization.
+
+Customer credentials will be used by the API service's authorization flow rather than moving Basic Authorization into the generic framework authentication layer.
+
+### 9. Request Tracking
+
+Every incoming request will have two identifiers:
+
+```text
+externalReferenceNo
+requestContextId
+```
+
+`externalReferenceNo`:
+
+* is supplied by the caller;
+* is used for duplicate incoming-request detection;
+* is available for logging/correlation from the beginning of request processing.
+
+`requestContextId`:
+
+* is generated by the framework;
+* identifies the framework request internally;
+* is unique for the framework request;
+* is mapped to the supplied externalReferenceNo;
+* is exposed in service-level responses once API-service processing has begun.
+
+The request-tracking table is:
+
+```text
+framework_Request_Reference
+```
+
+with the current Step-5 columns:
+
+```text
+requestContextId
+externalReferenceNo
+```
+
+The intended constraints are:
+
+```text
+requestContextId      → Primary Key
+externalReferenceNo   → Unique
+```
+
+There is intentionally no relationship between request reference tracking and clientId in Step 5.
+
+The future portal `UserId` / emailId model is unrelated to this request-reference model and is outside the current Phase-2 implementation.
+
+### 10. RequestContext and Session Context
+
+The framework will generate `requestContextId` at the beginning of request processing so that it is available for internal logging and tracing throughout the request lifecycle.
+
+`externalReferenceNo` will be captured from the incoming request before API-service execution so that early framework processing can be correlated with the caller's reference.
+
+For responses after the API service has been invoked, the standard response payload will contain:
+
+```text
+responsePayload
+    ├── sessionContext
+    │     ├── userId
+    │     ├── requestContextId
+    │     └── externalReferenceNo
+    │
+    └── service-specific response
+```
+
+During Phase 2:
+
+```text
+userId = ""
+```
+
+`UserId` is not implemented yet.
+
+Framework errors that occur before API-service execution will continue to use the existing framework error response structure and will not introduce an empty `sessionContext`.
+
+### 11. Future Portal User / Application Model
+
+A future portal model may introduce:
+
+```text
+User
+    ├── emailId
+    └── userId
+
+User
+    └── multiple Applications
+            ├── applicationName
+            └── clientId
+```
+
+The future uniqueness rule for UserId is expected to be:
+
+```text
+(emailId, userId) → Unique
+```
+
+This is intentionally outside Step 5 and will be addressed when the current in-code client/application registries are moved toward persistent storage in a future phase.
+
+No `UserId` field is required in the Step-5 database model.
+
+### 12. Data Access Boundary
+
+API services will not directly scatter SQL statements throughout their business logic.
+
+The intended structure is:
+
+```text
+API Service
+    ↓
+Business / Service Logic
+    ↓
+Data Access Layer
+    ↓
+SQLite
+```
+
+The data-access layer will own database interaction such as:
+
+```text
+SELECT
+INSERT
+UPDATE
+```
+
+and relevant transaction/constraint handling.
+
+The API service will own:
+
+```text
+request interpretation
+business validation
+customer authorization
+business decisions
+response construction
+```
+
+This separation is intended to make a future SQLite → PostgreSQL migration manageable.
+
+### 13. Database Initialization
+
+The Step-5 implementation will include a minimal database initialization mechanism that creates the required SQLite database and tables when required.
+
+The schema should establish the required:
+
+* primary keys;
+* unique constraints;
+* foreign keys;
+* status reference tables; and
+* request-reference constraints.
+
+The generated SQLite database file itself should remain local and should not be committed to Git.
+
+The repository should contain the schema/initialization definition required to recreate the local database.
+
+### 14. Basic Authorization and Business Authorization
+
+The security flow for the realistic APIs remains:
+
+```text
+Client Authentication
+    ↓
+Is the application permitted to access the API?
+    ↓
+Basic Authorization
+    ↓
+Is the customer credential valid?
+    ↓
+Business Authorization
+    ↓
+Is the authenticated customer allowed to access
+the requested customer/account data?
+    ↓
+Business operation
+```
+
+For example, `fetchBalance` should not return an account balance merely because the supplied account exists.
+
+The authenticated customer identity must correspond to the requested customer/account relationship.
+
+### 15. Request-Reference and Database Consistency
+
+Application logic may perform an early duplicate-reference check for useful error handling.
+
+The database must also enforce the uniqueness constraint on `externalReferenceNo`.
+
+This provides:
+
+```text
+Application check
+    → early/meaningful validation
+
+Database constraint
+    → final persistence-level protection
+```
+
+This is especially important when multiple requests could arrive concurrently.
+
+### 16. Step-5 Scope Boundary
+
+Step 5 intentionally does not introduce database integration for:
+
+```text
+ServiceRegistry
+ClientRegistry
+SubscriptionRegistry
+Cryptography configuration
+Framework configuration
+```
+
+Those structures remain in-code during Phase 2.
+
+Step 5 also does not introduce:
+
+```text
+generic ORM architecture
+generic repository framework
+database-backed client management
+database-backed subscription management
+actual LDAP integration
+production-grade banking data model
+```
+
+The objective is to establish one realistic and persistent API-service flow using a minimal relational database.
+
+### 17. Planned Step-5 Implementation Sequence
+
+The implementation sequence will be:
+
+```text
+1. Finalize SQLite schema and constraints
+        ↓
+2. Create database initialization/schema
+        ↓
+3. Establish minimal SQLite data-access boundary
+        ↓
+4. Populate dummy status/reference data
+        ↓
+5. Populate dummy customer/account/credential data
+        ↓
+6. Add framework requestContextId / externalReferenceNo handling
+        ↓
+7. Implement customerAddition
+        ↓
+8. Implement searchCustomer
+        ↓
+9. Implement fetchBalance
+        ↓
+10. Integrate Basic Authorization with customer credentials
+        ↓
+11. Implement service-level business authorization
+        ↓
+12. Verify service responses and request correlation
+        ↓
+13. Remove the temporary Echo Authorization requirement
+```
+
+Regression-suite expansion for the complete Phase-2 functionality remains deferred until after Step 6, as previously agreed.
+
+### 18. Phase-3 Direction
+
+The Step-5 SQLite implementation is deliberately a learning and architecture-validation stage.
+
+Future Phase-3 work may generalize persistence across the framework, including:
+
+```text
+Client Registry
+Subscription Registry
+Customer/User data
+Service Registry
+Request tracking
+other persistent configuration
+```
+
+The persistence boundary established in Step 5 should therefore avoid unnecessary coupling to SQLite-specific behavior where doing so would prevent a later PostgreSQL implementation.
+
+Data Access Layer (DAL) Architecture
+
+The framework will use an evolutionary, responsibility-driven approach for Data Access Layers rather than maintaining one generic DAL containing all SQL operations.
+
+For **API-related persistence**, the initial DAL will be created based on the data-access responsibility required by the first API that needs it. As additional APIs are implemented, their database requirements will be evaluated against existing DAL responsibilities:
+
+1. **Reuse an existing function** when the new requirement is functionally identical to an existing persistence operation, including the same data responsibility, filters/criteria, and returned information.
+2. **Extend an existing DAL with a new function** when the requirement belongs to the same data/domain responsibility but requires a meaningful variation in query criteria, filters, projection, ordering, or similar persistence details.
+3. **Create a new DAL** when the requirement represents a materially different persistence responsibility, even when it accesses the same physical table. Indicators include a different business/domain responsibility, different data lifecycle, different transaction/consistency responsibility, or a different result/data meaning. Shared table usage alone does not justify placing unrelated operations in the same DAL.
+
+DAL boundaries must therefore be based primarily on **persistence responsibility and domain meaning**, not on API names or SQL similarity. A DAL may initially be associated with a particular API or API group, but its responsibility may later be reused by other APIs. If the responsibility becomes sufficiently distinct, it may be separated into a new DAL.
+
+For **framework-related persistence**, the same responsibility-driven rules apply. However, framework persistence requirements can generally be identified directly from the existing framework architecture because the responsibilities of individual framework layers are already well defined. A generic framework DAL will not be created in advance. When a framework layer requires database access, an appropriate DAL is created for that persistence responsibility. If another framework layer later requires the same responsibility, the existing DAL/function is reused or extended according to the same rules above. New framework functionality may require creation or modification of DALs, but framework DALs are expected to change less frequently than API-related DALs because the framework architecture and its persisted responsibilities are comparatively stable.
+
+The objective is to keep each DAL cohesive, prevent unrelated SQL operations from accumulating in a single generic module, avoid unnecessary duplication, and allow the DAL structure to evolve naturally as actual API and framework persistence requirements become known.
+
+### Database Lifecycle Separation
+
+Refactor the current SQLite setup so that database connection management, schema management, and seed data provisioning are separate operations.
+
+**Target structure:**
+
+```text
+database/
+├── dbStart.ts
+└── dbStop.ts
+
+databaseSchema/
+├── databaseSchemaMigrator.ts
+└── schema/
+    ├── 000_initialSchema.ts
+    ├── 001_...
+    ├── 002_...
+    └── ...
+
+databaseSeed/
+├── databaseSeed.ts
+└── seeds/
+    ├── statusSeed.ts
+    ├── credentialSeed.ts
+    └── ...
+```
+
+**Responsibilities:**
+
+* `dbStart.ts` — open the SQLite database connection and make the active connection available to the application.
+* `dbStop.ts` — close the database connection during application shutdown.
+* `000_initialSchema.ts` — establish the initial database schema for a new database.
+* Subsequent files in `schema/` — represent ordered schema/data migrations applied to existing databases; migration files should be treated as immutable historical changes.
+* `databaseSchemaMigrator.ts` — determine and execute pending migrations, including handling a completely new database beginning at `000_initialSchema`.
+* `seeds/*` — define baseline/reference seed data.
+* `databaseSeed.ts` — orchestrate the seed operations. Seed definitions represent the desired baseline for newly provisioned databases; removing a value from a seed does not remove it from existing databases. Changes to existing persisted seed/reference data must be handled deliberately through an appropriate migration/data-migration operation.
+
+Database connection startup, schema migration, and seeding must remain separate responsibilities and must not be inherently coupled to the normal server startup trigger.
+
+Once this database lifecycle refactor is completed and verified, return to the planned Step-5 API implementation and responsibility-driven DAL design.
