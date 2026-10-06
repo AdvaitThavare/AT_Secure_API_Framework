@@ -2,6 +2,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { dbStart } from '../database/dbStart';
 import { dbStop } from '../database/dbStop';
 import { initialSchema } from './schema/000_initialSchema';
+import { addOrUpdateCustomerSchema } from './schema/001_addOrUpdateCustomer';
 
 type SchemaMigration = {
     name: string;
@@ -9,7 +10,8 @@ type SchemaMigration = {
 };
 
 const schemaMigrations: SchemaMigration[] = [
-    initialSchema
+    initialSchema,
+    addOrUpdateCustomerSchema
 ];
 
 function getSchemaVersion(database: DatabaseSync): number {

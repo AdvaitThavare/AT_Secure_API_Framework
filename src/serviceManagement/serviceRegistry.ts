@@ -8,6 +8,7 @@ import { clientdecryptAES_RSA } from '../servicesAPI/miscellaneous/clientCryptog
 import { clientencryptAES_RSA } from '../servicesAPI/miscellaneous/clientCryptography/AES_RSA/clientencryptAES_RSA';
 import { clientdecryptJWS_AES_RSA } from '../servicesAPI/miscellaneous/clientCryptography/JWS_AES_RSA/clientdecryptJWS_AES_RSA';
 import { clientencryptJWS_AES_RSA } from '../servicesAPI/miscellaneous/clientCryptography/JWS_AES_RSA/clientencryptJWS_AES_RSA';
+import { addUpdateCustomer } from '../servicesAPI/banking/customerMaintenance/addOrUpdateCustomer/addOrUpdateCustomer';
 
 export type HttpMethod =
   | 'GET'
@@ -88,7 +89,14 @@ export const serviceRegistry: ServiceDefinition[] = [
     mandatoryHeaders: [],
     service: clientencryptJWS_AES_RSA,
   },
-
+  {
+    serviceKey: 'addUpdateCustomer',
+    endpoint: '/customerMaintenance/addUpdateCustomer',
+    allowedMethods: ['POST'],
+    allowedFrameworkFlows: ['PLAIN', 'ENCRYPTED'],
+    mandatoryHeaders: ['authorization'],
+    service: addUpdateCustomer,
+  },
   /*
   {
     serviceKey: 'dummy1Service',

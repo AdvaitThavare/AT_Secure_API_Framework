@@ -3,6 +3,7 @@ import { dbStart } from '../database/dbStart';
 import { dbStop } from '../database/dbStop';
 import { seedStatusData } from './seeds/statusSeed';
 import { seedCredentialData } from './seeds/credentialSeed';
+import { seedAccountTypeData } from './seeds/accountTypeSeed';
 
 export function seedDatabase(database: DatabaseSync): void {
     database.exec('BEGIN');
@@ -10,6 +11,7 @@ export function seedDatabase(database: DatabaseSync): void {
     try {
         seedStatusData(database);
         seedCredentialData(database);
+        seedAccountTypeData(database);
 
         database.exec('COMMIT');
     } catch (error) {

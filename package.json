@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "tsc",
+    "database:setup": "node -e \"require('./dist/databaseConfig/databaseSetup.js').databaseSetup()\"",
     "test:regression": "playwright test PlaywrightSuite/Tests"
   },
   "keywords": [],
