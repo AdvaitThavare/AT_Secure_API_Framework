@@ -1,32 +1,27 @@
 import type { ServiceContext } from '../../../../context/requestContext';
 
-export type AddUpdateCustomerAction =
-    | 'CREATE'
-    | 'UPDATE';
+export type AddUpdateCustomerAction = 'CREATE' | 'UPDATE';
 
-export type OpenOrLinkAccount =
-    | 'YES'
-    | 'NO';
+export type OpenOrLinkAccount = 'YES' | 'NO';
 
-export type AccountType =
-    | 'SAVINGS'
-    | 'CURRENT';
+export type AccountType = 1 | 2;
 
 export type AddUpdateCustomerAccount = {
     debitAccountNo?: string | null;
     ifscCode?: string | null;
-    accountType: AccountType;
-    openOrLinkAccount: OpenOrLinkAccount;
+    accountType?: AccountType | null;
+    openOrLinkAccount?: OpenOrLinkAccount | null;
 };
 
 export type AddUpdateCustomerRequest = {
     customerId?: string | null;
-    customerName?: string | null;
+    customerFirstName?: string | null;
+    customerLastName?: string | null;
     customerMobileNo?: string | null;
     customerPAN?: string | null;
     customerGender?: string | null;
     account?: AddUpdateCustomerAccount | null;
-    action: AddUpdateCustomerAction;
+    action?: AddUpdateCustomerAction | null;
 };
 
 export type AddUpdateCustomerServiceError = {
@@ -38,7 +33,7 @@ export type AddUpdateCustomerServiceError = {
 export type AddUpdateCustomerAccountPayload = {
     debitAccountNo?: string | null;
     ifscCode?: string | null;
-    accountType?: 1 | 2 | null;
+    accountType?: AccountType | null;
     openOrLinkAccount?: 'YES' | 'NO' | null;
 };
 
@@ -58,14 +53,8 @@ export type AddUpdateCustomerContext = Omit<ServiceContext, 'payload'> & {
 };
 
 export type AddUpdateCustomerTechnicalValidationResult =
-    | {
-        valid: true;
-        context: AddUpdateCustomerContext;
-    }
-    | {
-        valid: false;
-        error: AddUpdateCustomerServiceError;
-    };
+    | { valid: true; context: AddUpdateCustomerContext }
+    | { valid: false; error: AddUpdateCustomerServiceError };
 
 export type AddUpdateCustomerFunctionalValidationResult =
     | { valid: true; context: AddUpdateCustomerContext }

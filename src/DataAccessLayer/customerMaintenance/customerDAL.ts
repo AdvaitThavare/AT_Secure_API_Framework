@@ -2,6 +2,8 @@ import type { DatabaseSync } from 'node:sqlite';
 
 export type CustomerDALErrorCode =
     | 'CUSTOMER_ALREADY_EXISTS'
+    | 'CUSTOMER_MOBILE_ALREADY_EXISTS'
+    | 'CUSTOMER_PAN_ALREADY_EXISTS'
     | 'CUSTOMER_NOT_FOUND'
     | 'DUPLICATE_ACCOUNT_COMBINATION'
     | 'ACCOUNT_TYPE_ALREADY_EXISTS';
@@ -60,6 +62,16 @@ function mapCustomerDatabaseError(error: unknown): unknown {
         errorMessage.includes('customer_Account_Details.ifscCode')
     ) {
         return new CustomerDALError('DUPLICATE_ACCOUNT_COMBINATION');
+    }
+
+    // Customer mobile number uniqueness.
+    if (errorMessage.includes('customer_Details.customerMobileNo')) {
+        return new CustomerDALError('CUSTOMER_MOBILE_ALREADY_EXISTS');
+    }
+
+    // Customer PAN uniqueness.
+    if (errorMessage.includes('customer_Details.customerPAN')) {
+        return new CustomerDALError('CUSTOMER_PAN_ALREADY_EXISTS');
     }
 
     return error;

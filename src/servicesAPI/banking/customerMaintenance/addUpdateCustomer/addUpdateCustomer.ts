@@ -6,7 +6,7 @@ import { addUpdateCustomerClientDefinition } from './addUpdateCustomerClientDefi
 import { addUpdateCustomerTechnicalValidator } from './addUpdateCustomerTechnicalValidator';
 import { addUpdateCustomerFunctionalValidator } from './addUpdateCustomerFunctionalValidator';
 import type { DatabaseSync } from 'node:sqlite';
-import { createCustomer, fetchCustomer, updateCustomer } from '../../../../DataAccessLayer/customerMaintenance/customerDAL';
+import { CustomerDALError, createCustomer, fetchCustomer, updateCustomer } from '../../../../DataAccessLayer/customerMaintenance/customerDAL';
 
 
 function validateCustomerCredentials(
@@ -31,6 +31,50 @@ function validateCustomerCredentials(
     }
 
     return null;
+}
+
+const customerDALErrorResponses: Record<CustomerDALError['errorCode'], { statusCode: number; message: string }> = {
+    CUSTOMER_ALREADY_EXISTS: {
+        statusCode: 409,
+        message: 'Customer already exists. Only Update action is allowed.'
+    },
+    CUSTOMER_MOBILE_ALREADY_EXISTS: {
+        statusCode: 409,
+        message: 'The mobile number is already registered to another customer.'
+    },
+    CUSTOMER_PAN_ALREADY_EXISTS: {
+        statusCode: 409,
+        message: 'The PAN is already registered to another customer.'
+    },
+    CUSTOMER_NOT_FOUND: {
+        statusCode: 404,
+        message: 'Customer does not exist. Only Create action is allowed.'
+    },
+    DUPLICATE_ACCOUNT_COMBINATION: {
+        statusCode: 409,
+        message: 'The debit account number and IFSC code are already registered.'
+    },
+    ACCOUNT_TYPE_ALREADY_EXISTS: {
+        statusCode: 409,
+        message: 'The customer already has an account of this type for the supplied IFSC code.'
+    }
+};
+
+function customerDALErrorResponse(
+    error: CustomerDALError
+): ServiceResponse {
+    const { statusCode, message } = customerDALErrorResponses[error.errorCode];
+
+    return {
+        statusCode,
+        payload: {
+            statusCode,
+            errorCode: error.errorCode,
+            message
+        },
+        payloadContentType: 'application/json',
+        responseHeaders: {}
+    };
 }
 
 export function addUpdateCustomer(
@@ -73,38 +117,60 @@ export function addUpdateCustomer(
         };
     }
 
-    const functionalValidationResult = addUpdateCustomerFunctionalValidator(
-        database,
-        technicalValidationResult.context
-    );
-
-    if (!functionalValidationResult.valid) {
-        const error = functionalValidationResult.error;
-
-        return {
-            statusCode: error.statusCode,
-            payload: error,
-            payloadContentType: 'application/json',
-            responseHeaders: {}
-        };
-    }
-
-    // Use the context returned by functional validation.
-    // It may contain internally generated account details.
-    const validatedPayload = functionalValidationResult.context.payload;
-
-    const {
-        action,
-        customerId,
-        customerFirstName,
-        customerLastName,
-        customerMobileNo,
-        customerPAN,
-        customerGender,
-        account
-    } = validatedPayload;
-
     try {
+        const functionalValidationResult = addUpdateCustomerFunctionalValidator(
+            database,
+            technicalValidationResult.context
+        );
+
+        if (!functionalValidationResult.valid) {
+            const error = functionalValidationResult.error;
+
+            return {
+                statusCode: error.statusCode,
+                payload: error,
+                payloadContentType: 'application/json',
+                responseHeaders: {}
+            };
+        }
+
+        // Use the context returned by functional validation.
+        // It may contain internally generated account details.
+        const validatedPayload = functionalValidationResult.context.payload;
+
+        const {
+            action,
+            customerId,
+            customerFirstName,
+            customerLastName,
+            customerMobileNo,
+            customerPAN,
+            customerGender,
+            account
+        } = validatedPayload;
+
+        if (action === 'UPDATE') {
+            const hasCustomerDetailsUpdate = Boolean(
+                customerFirstName?.trim() ||
+                customerLastName?.trim() ||
+                customerMobileNo?.trim() ||
+                customerGender?.trim()
+            );
+
+            const hasAccountUpdate = account?.openOrLinkAccount === 'YES';
+
+            if (!hasCustomerDetailsUpdate && !hasAccountUpdate) {
+                return {
+                    statusCode: 200,
+                    payload: {
+                        message: 'No new values provided; record remains unchanged.'
+                    },
+                    payloadContentType: 'application/json',
+                    responseHeaders: {}
+                };
+            }
+        }
+
         if (action === 'CREATE') {
             const createAccount = account!;
 
@@ -115,7 +181,7 @@ export function addUpdateCustomer(
                     customerLastName: customerLastName as string,
                     customerMobileNo: customerMobileNo as string,
                     customerPAN,
-                    customerGender: customerGender ?? null
+                    customerGender: customerGender?.trim() ? customerGender : null
                 },
                 account: {
                     debitAccountNo: createAccount.debitAccountNo as string,
@@ -167,6 +233,10 @@ export function addUpdateCustomer(
         };
 
     } catch (error) {
+        if (error instanceof CustomerDALError) {
+            return customerDALErrorResponse(error);
+        }
+
         return {
             statusCode: 500,
             payload: {
