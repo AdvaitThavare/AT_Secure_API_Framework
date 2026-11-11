@@ -34,8 +34,7 @@ function validatePayloadState(
     context: RequestContext,
     definition: ServiceDefinition
 ): AppError | null {
-    const payloadStateValues =
-        context.requestHeaders[HEADER_PAYLOAD_STATE];
+    const payloadStateValues = context.requestHeaders[HEADER_PAYLOAD_STATE];
 
     if (!payloadStateValues) {
         return {
@@ -108,8 +107,7 @@ export function endpointValidator(
 ): AppError | ServiceDefinition {
     const endpoint = context.req.url ?? '/';
 
-    const serviceDefinition =
-        findServiceDefinition(endpoint);
+    const serviceDefinition = findServiceDefinition(endpoint);
 
     if (!serviceDefinition) {
         return {

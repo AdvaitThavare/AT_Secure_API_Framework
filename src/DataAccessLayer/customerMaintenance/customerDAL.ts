@@ -1,12 +1,77 @@
 import type { DatabaseSync } from 'node:sqlite';
 
+export type CustomerDALErrorCode =
+    | 'CUSTOMER_ALREADY_EXISTS'
+    | 'CUSTOMER_NOT_FOUND'
+    | 'DUPLICATE_ACCOUNT_COMBINATION'
+    | 'ACCOUNT_TYPE_ALREADY_EXISTS';
+
+export class CustomerDALError extends Error {
+    constructor(
+        public readonly errorCode: CustomerDALErrorCode
+    ) {
+        super(errorCode);
+        this.name = 'CustomerDALError';
+    }
+}
+
+const SQLITE_CONSTRAINT_PRIMARYKEY = 1555;
+const SQLITE_CONSTRAINT_UNIQUE = 2067;
+
+function mapCustomerDatabaseError(error: unknown): unknown {
+    if (error instanceof CustomerDALError) {
+        return error;
+    }
+
+    if (!(error instanceof Error)) {
+        return error;
+    }
+
+    const sqliteErrorCode = (
+        error as Error & { errcode?: number }
+    ).errcode;
+
+    if (
+        sqliteErrorCode !== SQLITE_CONSTRAINT_PRIMARYKEY &&
+        sqliteErrorCode !== SQLITE_CONSTRAINT_UNIQUE
+    ) {
+        return error;
+    }
+
+    const errorMessage = error.message;
+
+    // Customer ID uniqueness.
+    if (errorMessage.includes('customer_Details.customerId')) {
+        return new CustomerDALError('CUSTOMER_ALREADY_EXISTS');
+    }
+
+    // Customer + IFSC + account type uniqueness.
+    if (
+        errorMessage.includes('customer_Account_Details.customerId') &&
+        errorMessage.includes('customer_Account_Details.ifscCode') &&
+        errorMessage.includes('customer_Account_Details.accountType')
+    ) {
+        return new CustomerDALError('ACCOUNT_TYPE_ALREADY_EXISTS');
+    }
+
+    // Debit account number + IFSC uniqueness.
+    if (
+        errorMessage.includes('customer_Account_Details.debitAccountNo') &&
+        errorMessage.includes('customer_Account_Details.ifscCode')
+    ) {
+        return new CustomerDALError('DUPLICATE_ACCOUNT_COMBINATION');
+    }
+
+    return error;
+}
 
 // ***********CreateCustomer***********//
 
 const INITIAL_ACCOUNT_BALANCE = 10000;
 
 interface NewCustomerDetails {
-    customerName: string;
+    customerFirstName: string;
+    customerLastName: string;
     customerMobileNo: string;
     customerPAN: string;
     customerGender: string | null;
@@ -24,63 +89,29 @@ interface CreateCustomerInput {
     account: NewCustomerAccount;
 }
 
-export function createCustomer(
-    database: DatabaseSync,
-    input: CreateCustomerInput
-): void {
-    if (customerIdCheck(database, input.customerId)) {
-        throw new Error('Customer already exists. Only Update action is allowed');
-    }
+type UpdateCustomerDetails = Partial<Pick<
+    NewCustomerDetails,
+    | 'customerFirstName'
+    | 'customerLastName'
+    | 'customerMobileNo'
+    | 'customerGender'
+>>;
 
-    database.exec('BEGIN');
+interface UpdateCustomerInput {
+    customerId: string;
+    customer: UpdateCustomerDetails;
+    account?: NewCustomerAccount;
+}
 
-    try {
-        const customerDetailsInsert = database.prepare(`
-            INSERT INTO customer_Details (
-                customerId,
-                customerName,
-                customerMobileNo,
-                customerPAN,
-                customerGender,
-                customerStatus
-            )
-            VALUES (?, ?, ?, ?, ?, ?);
-`);
+type CustomerUpdateColumn =
+    | 'customerFirstName'
+    | 'customerLastName'
+    | 'customerMobileNo'
+    | 'customerGender';
 
-        customerDetailsInsert.run(
-            input.customerId,
-            input.customer.customerName,
-            input.customer.customerMobileNo,
-            input.customer.customerPAN,
-            input.customer.customerGender,
-            1
-        );
-
-        const customerAccountInsert = database.prepare(`
-            INSERT INTO customer_Account_Details (
-                customerId,
-                debitAccountNo,
-                ifscCode,
-                accountType,
-                accountBalance,
-                accountStatus
-            )
-            VALUES (?, ?, ?, ?, ?, ?);
-`);
-
-        customerAccountInsert.run(
-            input.customerId,
-            input.account.debitAccountNo,
-            input.account.ifscCode,
-            input.account.accountType,
-            INITIAL_ACCOUNT_BALANCE,
-            1
-        );
-        database.exec('COMMIT');
-    } catch (error) {
-        database.exec('ROLLBACK');
-        throw error;
-    }
+interface CustomerUpdate {
+    column: CustomerUpdateColumn;
+    value: string;
 }
 
 function customerIdCheck(
@@ -97,12 +128,290 @@ function customerIdCheck(
     return customerIdQuery.get(customerId) !== undefined;
 }
 
+export function accountCombinationExists(
+    database: DatabaseSync,
+    debitAccountNo: string,
+    ifscCode: string
+): boolean {
+    const accountCombinationQuery = database.prepare(`
+        SELECT 1
+        FROM customer_Account_Details
+        WHERE debitAccountNo = ?
+            AND ifscCode = ?
+        LIMIT 1;
+    `);
+
+    return accountCombinationQuery.get(
+        debitAccountNo,
+        ifscCode
+    ) !== undefined;
+}
+
+export function customerAccountTypeExists(
+    database: DatabaseSync,
+    customerId: string,
+    ifscCode: string,
+    accountType: number
+): boolean {
+    const customerAccountTypeQuery = database.prepare(`
+        SELECT 1
+        FROM customer_Account_Details
+        INNER JOIN account_Type
+            ON customer_Account_Details.accountType = account_Type.accountTypeDescription
+        WHERE customer_Account_Details.customerId = ?
+            AND customer_Account_Details.ifscCode = ?
+            AND account_Type.accountType = ?
+        LIMIT 1;
+    `);
+
+    return customerAccountTypeQuery.get(customerId, ifscCode, accountType) !== undefined;
+}
+
+function getAccountTypeDescription(
+    database: DatabaseSync,
+    accountType: number
+): string {
+    const accountTypeQuery = database.prepare(`
+        SELECT accountTypeDescription
+        FROM account_Type
+        WHERE accountType = ?;
+    `);
+
+    const result = accountTypeQuery.get(accountType);
+
+    if (result === undefined) {
+        throw new Error(`Invalid account type: ${accountType}`);
+    }
+
+    return result.accountTypeDescription as string;
+}
+
+// ***********CreateCustomer***********//
+
+export function createCustomer(
+    database: DatabaseSync,
+    input: CreateCustomerInput
+): void {
+    database.exec('BEGIN');
+
+    try {
+        if (customerIdCheck(database, input.customerId)) {
+            throw new CustomerDALError('CUSTOMER_ALREADY_EXISTS');
+        }
+
+        createCustomerDetails(
+            database,
+            input.customerId,
+            input.customer
+        );
+
+        createAccountDetails(
+            database,
+            input.customerId,
+            input.account
+        );
+
+        database.exec('COMMIT');
+    } catch (error) {
+        database.exec('ROLLBACK');
+        throw mapCustomerDatabaseError(error);
+    }
+}
+
+function createCustomerDetails(
+    database: DatabaseSync,
+    customerId: string,
+    customer: NewCustomerDetails
+): void {
+    const customerDetailsInsert = database.prepare(`
+        INSERT INTO customer_Details (
+            customerId,
+            customerFirstName,
+            customerLastName,
+            customerMobileNo,
+            customerPAN,
+            customerGender,
+            customerStatus
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?);
+    `);
+
+    customerDetailsInsert.run(
+        customerId,
+        customer.customerFirstName,
+        customer.customerLastName,
+        customer.customerMobileNo,
+        customer.customerPAN,
+        customer.customerGender,
+        'ACTIVE'
+    );
+}
+
+function createAccountDetails(
+    database: DatabaseSync,
+    customerId: string,
+    account: NewCustomerAccount
+): void {
+    insertCustomerAccount(database, customerId, account);
+}
+
+
+// ***********UpdateCustomer***********//
+
+export function updateCustomer(
+    database: DatabaseSync,
+    input: UpdateCustomerInput
+): void {
+    database.exec('BEGIN');
+
+    try {
+        if (!customerIdCheck(database, input.customerId)) {
+            throw new CustomerDALError('CUSTOMER_NOT_FOUND');
+        }
+
+        updateCustomerDetails(
+            database,
+            input.customerId,
+            input.customer
+        );
+
+        if (input.account !== undefined) {
+            updateAccountDetails(
+                database,
+                input.customerId,
+                input.account
+            );
+        }
+
+        database.exec('COMMIT');
+    } catch (error) {
+        database.exec('ROLLBACK');
+        throw mapCustomerDatabaseError(error);
+    }
+}
+
+function updateCustomerDetails(
+    database: DatabaseSync,
+    customerId: string,
+    customer: UpdateCustomerDetails
+): void {
+    const customerUpdates: CustomerUpdate[] = [];
+
+    const {
+        customerFirstName,
+        customerLastName,
+        customerMobileNo,
+        customerGender
+    } = customer;
+
+    if (
+        customerFirstName !== undefined &&
+        customerFirstName.trim() !== ''
+    ) {
+        customerUpdates.push({
+            column: 'customerFirstName',
+            value: customerFirstName
+        });
+    }
+
+    if (
+        customerLastName !== undefined &&
+        customerLastName.trim() !== ''
+    ) {
+        customerUpdates.push({
+            column: 'customerLastName',
+            value: customerLastName
+        });
+    }
+
+    if (
+        customerMobileNo !== undefined &&
+        customerMobileNo.trim() !== ''
+    ) {
+        customerUpdates.push({
+            column: 'customerMobileNo',
+            value: customerMobileNo
+        });
+    }
+
+    if (
+        customerGender !== undefined &&
+        customerGender !== null &&
+        customerGender.trim() !== ''
+    ) {
+        customerUpdates.push({
+            column: 'customerGender',
+            value: customerGender
+        });
+    }
+
+    if (customerUpdates.length === 0) {
+        return;
+    }
+
+    const updateFields = customerUpdates
+        .map(({ column }) => `${column} = ?`)
+        .join(', ');
+
+    const customerDetailsUpdate = database.prepare(`
+        UPDATE customer_Details
+        SET ${updateFields}
+        WHERE customerId = ?;
+    `);
+
+    customerDetailsUpdate.run(
+        ...customerUpdates.map(({ value }) => value),
+        customerId
+    );
+}
+
+function updateAccountDetails(
+    database: DatabaseSync,
+    customerId: string,
+    account: NewCustomerAccount
+): void {
+    insertCustomerAccount(database, customerId, account);
+}
+
+// ***********SharedAccountPersistence***********//
+
+function insertCustomerAccount(
+    database: DatabaseSync,
+    customerId: string,
+    account: NewCustomerAccount
+): void {
+    const accountTypeDescription = getAccountTypeDescription(
+        database,
+        account.accountType
+    );
+    const customerAccountInsert = database.prepare(`
+        INSERT INTO customer_Account_Details (
+            customerId,
+            debitAccountNo,
+            ifscCode,
+            accountType,
+            accountBalance,
+            accountStatus
+        )
+        VALUES (?, ?, ?, ?, ?, ?);
+    `);
+
+    customerAccountInsert.run(
+        customerId,
+        account.debitAccountNo,
+        account.ifscCode,
+        accountTypeDescription,
+        INITIAL_ACCOUNT_BALANCE,
+        'ACTIVE'
+    );
+}
 
 // ***********FetchCustomer***********//
 
 interface CustomerDetailsRow {
     customerId: string;
-    customerName: string;
+    customerFirstName: string;
+    customerLastName: string;
     customerMobileNo: string;
     customerPAN: string;
     customerGender: string | null;
@@ -118,7 +427,8 @@ interface CustomerAccount {
 
 interface Customer {
     customerId: string;
-    customerName: string;
+    customerFirstName: string;
+    customerLastName: string;
     customerMobileNo: string;
     customerPAN: string;
     customerGender: string | null;
@@ -132,16 +442,15 @@ export function fetchCustomer(
 ): Customer | undefined {
     const customerDetailsQuery = database.prepare(`
         SELECT
-            cd.customerId,
-            cd.customerName,
-            cd.customerMobileNo,
-            cd.customerPAN,
-            cd.customerGender,
-            cs.statusDescription AS customerStatus
-        FROM customer_Details cd
-        INNER JOIN customer_Status cs
-            ON cd.customerStatus = cs.statusCode
-        WHERE cd.customerId = ?;
+            customerId,
+            customerFirstName,
+            customerLastName,
+            customerMobileNo,
+            customerPAN,
+            customerGender,
+            customerStatus
+        FROM customer_Details
+        WHERE customerId = ?;
     `);
 
     const customerRow = customerDetailsQuery.get(customerId);
@@ -150,28 +459,15 @@ export function fetchCustomer(
         return undefined;
     }
 
-    const customerDetails: CustomerDetailsRow = {
-        customerId: customerRow.customerId as string,
-        customerName: customerRow.customerName as string,
-        customerMobileNo: customerRow.customerMobileNo as string,
-        customerPAN: customerRow.customerPAN as string,
-        customerGender: customerRow.customerGender as string | null,
-        customerStatus: customerRow.customerStatus as string
-    };
-
     const customerAccountsQuery = database.prepare(`
         SELECT
-            cad.debitAccountNo,
-            cad.ifscCode,
-            at.accountTypeDescription AS accountType,
-            ast.statusDescription AS accountStatus
-        FROM customer_Account_Details cad
-        INNER JOIN account_Type at
-            ON cad.accountType = at.accountType
-        INNER JOIN account_Status ast
-            ON cad.accountStatus = ast.statusCode
-        WHERE cad.customerId = ?
-        ORDER BY cad.serialNo;
+            debitAccountNo,
+            ifscCode,
+            accountType,
+            accountStatus
+        FROM customer_Account_Details
+        WHERE customerId = ?
+        ORDER BY serialNo;
     `);
 
     const accountRows = customerAccountsQuery.all(customerId);
@@ -182,8 +478,15 @@ export function fetchCustomer(
         accountType: row.accountType as string,
         accountStatus: row.accountStatus as string
     }));
+
     return {
-        ...customerDetails,
+        customerId: customerRow.customerId as string,
+        customerFirstName: customerRow.customerFirstName as string,
+        customerLastName: customerRow.customerLastName as string,
+        customerMobileNo: customerRow.customerMobileNo as string,
+        customerPAN: customerRow.customerPAN as string,
+        customerGender: customerRow.customerGender as string | null,
+        customerStatus: customerRow.customerStatus as string,
         account
     };
 }

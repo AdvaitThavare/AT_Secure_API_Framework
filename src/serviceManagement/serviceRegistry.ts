@@ -8,7 +8,8 @@ import { clientdecryptAES_RSA } from '../servicesAPI/miscellaneous/clientCryptog
 import { clientencryptAES_RSA } from '../servicesAPI/miscellaneous/clientCryptography/AES_RSA/clientencryptAES_RSA';
 import { clientdecryptJWS_AES_RSA } from '../servicesAPI/miscellaneous/clientCryptography/JWS_AES_RSA/clientdecryptJWS_AES_RSA';
 import { clientencryptJWS_AES_RSA } from '../servicesAPI/miscellaneous/clientCryptography/JWS_AES_RSA/clientencryptJWS_AES_RSA';
-import { addUpdateCustomer } from '../servicesAPI/banking/customerMaintenance/addOrUpdateCustomer/addOrUpdateCustomer';
+import { addUpdateCustomer } from '../servicesAPI/banking/customerMaintenance/addUpdateCustomer/addUpdateCustomer';
+import type { DatabaseSync } from 'node:sqlite';
 
 export type HttpMethod =
   | 'GET'
@@ -20,7 +21,8 @@ export type HttpMethod =
 export type FrameworkFlow = PayloadState;
 
 export type ServiceHandler = (
-  context: ServiceContext
+  context: ServiceContext,
+  database: DatabaseSync
 ) => ServiceResponse | Promise<ServiceResponse>;
 
 export type ServiceDefinition = {

@@ -1,6 +1,7 @@
 import type { ServiceContext } from '../context/requestContext';
 import type { ServiceResponse } from './serviceResponse';
 import type { HttpMethod, ServiceDefinition, ServiceHandler } from './serviceRegistry';
+import type { DatabaseSync } from 'node:sqlite';
 
 function resolveServiceHandler(
   definition: ServiceDefinition,
@@ -16,7 +17,8 @@ function resolveServiceHandler(
 export function serviceDispatcher(
   definition: ServiceDefinition,
   context: ServiceContext,
-  method: HttpMethod
+  method: HttpMethod,
+  database: DatabaseSync
 ): ServiceResponse | Promise<ServiceResponse> {
   const serviceHandler =
     resolveServiceHandler(
@@ -24,5 +26,5 @@ export function serviceDispatcher(
       method
     );
 
-  return serviceHandler(context);
+  return serviceHandler(context, database);
 }

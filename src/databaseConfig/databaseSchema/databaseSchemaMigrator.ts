@@ -3,6 +3,9 @@ import { dbStart } from '../database/dbStart';
 import { dbStop } from '../database/dbStop';
 import { initialSchema } from './schema/000_initialSchema';
 import { addOrUpdateCustomerSchema } from './schema/001_addOrUpdateCustomer';
+import { splitCustomerNameSchema } from './schema/002_splitCustomerName';
+import { addDebitAccountIfscUniquenessSchema } from './schema/003_addDebitAccountIfscUniqueness';
+import { storeReferenceDescriptionsSchema } from './schema/004_storeReferenceDescriptions';
 
 type SchemaMigration = {
     name: string;
@@ -11,7 +14,10 @@ type SchemaMigration = {
 
 const schemaMigrations: SchemaMigration[] = [
     initialSchema,
-    addOrUpdateCustomerSchema
+    addOrUpdateCustomerSchema,
+    splitCustomerNameSchema,
+    addDebitAccountIfscUniquenessSchema,
+    storeReferenceDescriptionsSchema
 ];
 
 function getSchemaVersion(database: DatabaseSync): number {

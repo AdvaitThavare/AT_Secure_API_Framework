@@ -88,7 +88,8 @@ const server = createHTTPSServer(
       await serviceDispatcher(
         serviceDefinition,
         serviceContext,
-        context.req.method as HttpMethod
+        context.req.method as HttpMethod,
+        database
       );
 
     let responseBody =
